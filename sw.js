@@ -1,4 +1,4 @@
-const CACHE_NAME = 'infravetscan-v7';
+const CACHE_NAME = 'mediscan-v7';
 
 self.addEventListener('install', event => {
   self.skipWaiting();

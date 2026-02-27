@@ -7,7 +7,7 @@
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <link rel="manifest" href="manifest.json">
-  <title>InfraVetScan</title>
+  <title>MediScan</title>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
     *{margin:0;padding:0;box-sizing:border-box}
@@ -126,7 +126,7 @@
 <div class="app">
   <div class="header">
     <div class="logo"><svg viewBox="0 0 24 24" fill="none" stroke="#0b1120" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3C4.24 3 2 5.69 2 9c0 3.92 3.18 7.29 8.35 11.66a2.5 2.5 0 0 0 3.3 0C18.82 16.29 22 12.92 22 9c0-3.31-2.24-6-5-6a5.07 5.07 0 0 0-3.79 1.89l-.21.25-.21-.25A5.07 5.07 0 0 0 7 3z"/></svg></div>
-    <div class="hdr-text"><h1>Infra<span>Vet</span>Scan</h1><small>Scanner GS1 médicaments</small></div>
+    <div class="hdr-text"><h1>Medi<span>Scan</span></h1><small>Scanner GS1 médicaments</small></div>
     <div class="pill loading" id="pill"><span class="dot"></span><span id="ptxt">Init…</span></div>
   </div>
   <div class="camera">
@@ -263,7 +263,7 @@ function detectMedType(gs1){
     if(g13.substring(0,5)==='34009'){info.type='human';info.typeLabel='Médicament humain';}
     else if(g13.substring(0,5)==='34008'){info.type='human';info.typeLabel='Médicament hospitalier';}
     else if(g13.substring(0,5)==='34007'){info.type='device';info.typeLabel='Dispositif médical';}
-    else if(g13.substring(0,4)==='3401'){info.type='human';info.typeLabel='Médicament humain';}
+    else if(g13.substring(0,4)==='3401'){info.type='human';info.typeLabel='Produit de santé';}
     else{info.type='pharma';info.typeLabel='Produit pharmaceutique FR';}
   }
   // French veterinary — EAN company prefixes used by vet pharma labs
@@ -341,6 +341,18 @@ async function lookupMed(medInfo){
 
   // 4. Open Food Facts (sometimes has OTC pharma)
   promises.push(tryFetch('https://world.openfoodfacts.org/api/v2/product/'+g13+'.json?fields=product_name,brands',function(data){
+    if(data&&data.status===1&&data.product&&data.product.product_name){
+      return{nom:data.product.product_name,forme:null,titulaire:data.product.brands||null};}return null;
+  }));
+
+  // 5. Open Beauty Facts (parapharmacy, cosmetics, OTC)
+  promises.push(tryFetch('https://world.openbeautyfacts.org/api/v2/product/'+g13+'.json?fields=product_name,brands',function(data){
+    if(data&&data.status===1&&data.product&&data.product.product_name){
+      return{nom:data.product.product_name,forme:null,titulaire:data.product.brands||null};}return null;
+  }));
+
+  // 6. Open Pet Food Facts (pet products)
+  promises.push(tryFetch('https://world.openpetfoodfacts.org/api/v2/product/'+g13+'.json?fields=product_name,brands',function(data){
     if(data&&data.status===1&&data.product&&data.product.product_name){
       return{nom:data.product.product_name,forme:null,titulaire:data.product.brands||null};}return null;
   }));
