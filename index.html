@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
@@ -70,21 +71,24 @@
     .file-input-wrapper input[type="file"]{position:absolute;inset:0;opacity:0;cursor:pointer}
     #capture-canvas{display:none}
 
-    /* ─── Debug Log ─── */
-    #debug-log{position:absolute;top:8px;left:8px;right:8px;z-index:50;background:rgba(0,0,0,.85);border:1px solid var(--border);border-radius:10px;padding:10px;max-height:40%;overflow-y:auto;font-family:'JetBrains Mono',monospace;font-size:.65rem;line-height:1.5;pointer-events:auto;display:none}
-    #debug-log.visible{display:block}
-    #debug-log .log-line{margin-bottom:2px}
-    #debug-log .log-ok{color:var(--accent)}
-    #debug-log .log-warn{color:var(--warning)}
-    #debug-log .log-err{color:var(--danger)}
-    #debug-log .log-info{color:var(--text-dim)}
-    #btn-debug{position:absolute;top:8px;right:8px;z-index:51;width:28px;height:28px;background:var(--surface2);border:1px solid var(--border);color:var(--text-dim);border-radius:6px;font-size:.7rem;cursor:pointer;display:grid;place-items:center}
+```
+/* ─── Debug Log ─── */
+#debug-log{position:absolute;top:8px;left:8px;right:8px;z-index:50;background:rgba(0,0,0,.85);border:1px solid var(--border);border-radius:10px;padding:10px;max-height:40%;overflow-y:auto;font-family:'JetBrains Mono',monospace;font-size:.65rem;line-height:1.5;pointer-events:auto;display:none}
+#debug-log.visible{display:block}
+#debug-log .log-line{margin-bottom:2px}
+#debug-log .log-ok{color:var(--accent)}
+#debug-log .log-warn{color:var(--warning)}
+#debug-log .log-err{color:var(--danger)}
+#debug-log .log-info{color:var(--text-dim)}
+#btn-debug{position:absolute;top:8px;right:8px;z-index:51;width:28px;height:28px;background:var(--surface2);border:1px solid var(--border);color:var(--text-dim);border-radius:6px;font-size:.7rem;cursor:pointer;display:grid;place-items:center}
 
-    @supports (padding-top: env(safe-area-inset-top)){
-      .header{padding-top:calc(16px + env(safe-area-inset-top))}
-      .results-actions{padding-bottom:calc(16px + env(safe-area-inset-bottom))}
-      .controls{padding-bottom:calc(12px + env(safe-area-inset-bottom))}
-    }
+@supports (padding-top: env(safe-area-inset-top)){
+  .header{padding-top:calc(16px + env(safe-area-inset-top))}
+  .results-actions{padding-bottom:calc(16px + env(safe-area-inset-bottom))}
+  .controls{padding-bottom:calc(12px + env(safe-area-inset-bottom))}
+}
+```
+
   </style>
 </head>
 <body>
@@ -113,17 +117,20 @@
       <div class="scan-line"></div>
     </div>
 
-    <!-- Debug log overlay -->
-    <button id="btn-debug" onclick="document.getElementById('debug-log').classList.toggle('visible')">🐛</button>
-    <div id="debug-log"></div>
+```
+<!-- Debug log overlay -->
+<button id="btn-debug" onclick="document.getElementById('debug-log').classList.toggle('visible')">🐛</button>
+<div id="debug-log"></div>
 
-    <div class="status-bar">
-      <div class="status-text">
-        <div class="status-dot" id="status-dot"></div>
-        <span id="status-msg">Initialisation…</span>
-      </div>
-      <div id="fps-counter" style="font-family:'JetBrains Mono',monospace;font-size:.7rem;color:var(--text-dim)"></div>
-    </div>
+<div class="status-bar">
+  <div class="status-text">
+    <div class="status-dot" id="status-dot"></div>
+    <span id="status-msg">Initialisation…</span>
+  </div>
+  <div id="fps-counter" style="font-family:'JetBrains Mono',monospace;font-size:.7rem;color:var(--text-dim)"></div>
+</div>
+```
+
   </div>
 
   <div class="controls">
@@ -296,64 +303,68 @@ const DBG = {
     if (isAndroid && isFirefox) DBG.info('Normal sur Firefox Android');
   }
 
-  // ─── STEP 1b: Load ZBar if needed ───
-  let zbarScanFn = null; // Will hold the scanImageData function
+  // ─── STEP 1b: Load barcode-detector polyfill if needed ───
+  let polyfillDetector = null;
 
   if (!useNative) {
-    DBG.info('── Step 1b: ZBar WASM ──');
+    DBG.info('── Step 1b: Polyfill BarcodeDetector ──');
     if (typeof WebAssembly !== 'object') {
       DBG.err('WebAssembly non supporté — scan impossible');
     } else {
       engineBadge.textContent = 'WASM…';
 
-      // zbar.wasm v2 is an ES module — must use dynamic import()
+      // barcode-detector v2 is a proper ESM polyfill using zbar.wasm internally
       const cdns = [
-        'https://cdn.jsdelivr.net/npm/zbar.wasm@2.1.0/dist/index.js',
-        'https://unpkg.com/zbar.wasm@2.1.0/dist/index.js',
+        'https://cdn.jsdelivr.net/npm/barcode-detector@2/dist/es/pure.min.js',
+        'https://unpkg.com/barcode-detector@2/dist/es/pure.min.js',
+        'https://esm.sh/barcode-detector@2?bundle',
       ];
 
       for (const url of cdns) {
         if (useZbar) break;
         try {
-          DBG.info('import() from ' + url.split('/')[2] + '…');
+          const cdnName = url.split('/')[2];
+          DBG.info('import() from ' + cdnName + '…');
           const module = await Promise.race([
             import(url),
-            new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 12000)),
+            new Promise((_, rej) => setTimeout(() => rej(new Error('timeout 15s')), 15000)),
           ]);
 
           DBG.info('Module keys: ' + Object.keys(module).join(', '));
 
-          // Find scanImageData — could be default export or named
-          if (typeof module.scanImageData === 'function') {
-            zbarScanFn = module.scanImageData;
-          } else if (module.default?.scanImageData) {
-            zbarScanFn = module.default.scanImageData;
-          } else if (typeof module.getDefaultScanner === 'function') {
-            const scanner = await module.getDefaultScanner();
-            zbarScanFn = (imgData) => scanner.scan(imgData);
-            DBG.info('Using getDefaultScanner()');
+          // Get the BarcodeDetector class from the module
+          const Detector = module.BarcodeDetector || module.default?.BarcodeDetector || module.default;
+
+          if (Detector && typeof Detector === 'function') {
+            DBG.info('BarcodeDetector polyfill found, checking formats…');
+
+            // Check supported formats
+            if (Detector.getSupportedFormats) {
+              const fmts = await Detector.getSupportedFormats();
+              DBG.info('Polyfill formats: ' + fmts.join(', '));
+            }
+
+            polyfillDetector = new Detector({ formats: ['data_matrix'] });
+
+            // Quick test: make sure detect() is callable
+            if (typeof polyfillDetector.detect === 'function') {
+              useZbar = true;
+              engineBadge.textContent = 'WASM';
+              engineBadge.style.color = 'var(--warning)';
+              DBG.ok('✓ Polyfill BarcodeDetector ready (data_matrix)');
+            } else {
+              DBG.warn('Detector created but detect() not found');
+              polyfillDetector = null;
+            }
           } else {
-            // Try to find any function that looks like a scanner
+            DBG.warn('No BarcodeDetector class in module');
             for (const key of Object.keys(module)) {
               DBG.info('  module.' + key + ' = ' + typeof module[key]);
-              if (typeof module[key] === 'function' && key.toLowerCase().includes('scan')) {
-                zbarScanFn = module[key];
-                DBG.info('  → using module.' + key);
-                break;
-              }
             }
           }
-
-          if (zbarScanFn) {
-            useZbar = true;
-            engineBadge.textContent = 'WASM';
-            engineBadge.style.color = 'var(--warning)';
-            DBG.ok('✓ ZBar WASM ready (scanImageData found)');
-          } else {
-            DBG.warn('Module loaded but no scanImageData found');
-          }
         } catch(e) {
-          DBG.warn('import() failed: ' + e.message);
+          DBG.warn(cdns.indexOf(url) < cdns.length - 1 ? 'Failed, trying next CDN…' : 'All CDNs failed');
+          DBG.warn('  Error: ' + e.message);
         }
       }
 
@@ -563,29 +574,25 @@ const DBG = {
   function stopScanning() { scanning = false; if (scanRafId) cancelAnimationFrame(scanRafId); }
 
   async function tryDecode(canvas) {
-    if (useNative) {
+    // Try native first
+    if (useNative && nativeDetector) {
       try {
         const results = await nativeDetector.detect(canvas);
         if (results.length > 0 && results[0].rawValue?.length > 5) return results[0].rawValue;
       } catch(e) {}
     }
-    if (useZbar && zbarScanFn) {
+    // Then polyfill (same BarcodeDetector API)
+    if (useZbar && polyfillDetector) {
       try {
-        const ctx = canvas.getContext('2d', { willReadFrequently: true });
-        const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-        const symbols = await zbarScanFn(imgData);
-        if (symbols?.length > 0) {
-          for (const sym of symbols) {
-            let val = '';
-            if (typeof sym.decode === 'function') val = sym.decode();
-            else if (sym.data instanceof Uint8Array) val = new TextDecoder('iso-8859-1').decode(sym.data);
-            else if (typeof sym.data === 'string') val = sym.data;
-            else if (sym.value) val = sym.value;
-            if (val?.length > 5) return val;
+        const results = await polyfillDetector.detect(canvas);
+        if (results?.length > 0) {
+          for (const r of results) {
+            const val = r.rawValue || '';
+            if (val.length > 5) return val;
           }
         }
       } catch(e) {
-        DBG.warn('ZBar decode error: ' + e.message);
+        DBG.warn('Polyfill decode error: ' + e.message);
       }
     }
     return null;
@@ -804,61 +811,66 @@ const DBG = {
     }
 
     h += `<div class="raw-data" style="margin-top:20px"><div class="raw-data-label">Brut — ${raw.length} car.</div><pre>${esc(fmtRaw(raw))}</pre></div>`;
-    if (p.signature) {
-      h += `<div class="raw-data"><div class="raw-data-label">Signature (${p.signature.length})</div><pre style="color:var(--warning)">${esc(p.signature.substring(0,120))}…</pre></div>`;
-    }
-    resultsBody.innerHTML = h;
-  }
 
-  function esc(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
-  function fmtRaw(s) {
-    return s.replace(/[\x00-\x1F]/g, c => {
-      const n = c.charCodeAt(0);
-      return {0x1D:'⟨GS⟩',0x1E:'⟨RS⟩',0x1F:'⟨US⟩',0x04:'⟨EOT⟩'}[n] || `⟨${n.toString(16).padStart(2,'0')}⟩`;
-    });
-  }
+```
+if (p.signature) {
+  h += `<div class="raw-data"><div class="raw-data-label">Signature (${p.signature.length})</div><pre style="color:var(--warning)">${esc(p.signature.substring(0,120))}…</pre></div>`;
+}
+resultsBody.innerHTML = h;
+```
 
-  // ─── Torch ───
-  async function toggleTorch() {
-    if (!stream) return;
-    const track = stream.getVideoTracks()[0];
-    if (!track.getCapabilities?.()?.torch) { DBG.warn('Torch not supported'); return; }
-    torchOn = !torchOn;
-    await track.applyConstraints({ advanced: [{ torch: torchOn }] });
-    document.getElementById('btn-torch').classList.toggle('active', torchOn);
-  }
+}
 
-  // ─── UI Events ───
-  function setupEvents() {
-    document.getElementById('btn-torch').addEventListener('click', toggleTorch);
-    document.getElementById('btn-capture').addEventListener('click', captureAndDecode);
-    document.getElementById('file-input').addEventListener('change', e => {
-      if (e.target.files?.[0]) decodeFromFile(e.target.files[0]);
-      e.target.value = '';
-    });
-    document.getElementById('btn-close-results').addEventListener('click', closeResults);
-    document.getElementById('btn-rescan').addEventListener('click', closeResults);
-    document.getElementById('btn-copy').addEventListener('click', () => {
-      navigator.clipboard.writeText(lastRawResult).then(() => {
-        const btn = document.getElementById('btn-copy');
-        btn.textContent = 'Copié ✓';
-        setTimeout(() => btn.textContent = 'Copier', 1500);
-      });
-    });
-  }
+function esc(s) { return s.replace(/&/g,’&’).replace(/</g,’<’).replace(/>/g,’>’); }
+function fmtRaw(s) {
+return s.replace(/[\x00-\x1F]/g, c => {
+const n = c.charCodeAt(0);
+return {0x1D:’⟨GS⟩’,0x1E:’⟨RS⟩’,0x1F:’⟨US⟩’,0x04:’⟨EOT⟩’}[n] || `⟨${n.toString(16).padStart(2,'0')}⟩`;
+});
+}
 
-  function closeResults() {
-    resultsPanel.classList.remove('open');
-    if (video.videoWidth > 0) {
-      captureCanvas.width = video.videoWidth;
-      captureCanvas.height = video.videoHeight;
-    }
-    setTimeout(startScanning, 300);
-  }
+// ─── Torch ───
+async function toggleTorch() {
+if (!stream) return;
+const track = stream.getVideoTracks()[0];
+if (!track.getCapabilities?.()?.torch) { DBG.warn(‘Torch not supported’); return; }
+torchOn = !torchOn;
+await track.applyConstraints({ advanced: [{ torch: torchOn }] });
+document.getElementById(‘btn-torch’).classList.toggle(‘active’, torchOn);
+}
+
+// ─── UI Events ───
+function setupEvents() {
+document.getElementById(‘btn-torch’).addEventListener(‘click’, toggleTorch);
+document.getElementById(‘btn-capture’).addEventListener(‘click’, captureAndDecode);
+document.getElementById(‘file-input’).addEventListener(‘change’, e => {
+if (e.target.files?.[0]) decodeFromFile(e.target.files[0]);
+e.target.value = ‘’;
+});
+document.getElementById(‘btn-close-results’).addEventListener(‘click’, closeResults);
+document.getElementById(‘btn-rescan’).addEventListener(‘click’, closeResults);
+document.getElementById(‘btn-copy’).addEventListener(‘click’, () => {
+navigator.clipboard.writeText(lastRawResult).then(() => {
+const btn = document.getElementById(‘btn-copy’);
+btn.textContent = ‘Copié ✓’;
+setTimeout(() => btn.textContent = ‘Copier’, 1500);
+});
+});
+}
+
+function closeResults() {
+resultsPanel.classList.remove(‘open’);
+if (video.videoWidth > 0) {
+captureCanvas.width = video.videoWidth;
+captureCanvas.height = video.videoHeight;
+}
+setTimeout(startScanning, 300);
+}
 })();
 
 // Service Worker
-if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{});
+if (‘serviceWorker’ in navigator) navigator.serviceWorker.register(‘sw.js’).catch(()=>{});
 </script>
+
 </body>
 </html>
