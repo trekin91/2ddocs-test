@@ -1,4 +1,4 @@
-const CACHE_NAME = 'infravetscan-v5';
+const CACHE_NAME = 'infravetscan-v6';
 
 self.addEventListener('install', event => {
   self.skipWaiting();
