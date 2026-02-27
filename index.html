@@ -307,21 +307,7 @@ async function lookupMed(medInfo){
 
   var promises=[];
 
-  // 1. bdpmgf.vedielaute.fr — BDPM mirror (CORS OK, no auth)
-  // presentations search with wildcard on CIP13
-  promises.push(tryFetch('https://bdpmgf.vedielaute.fr/api/medicaments/presentations?q=*'+g13+'*&limit=3',function(data){
-    if(data&&data.data&&data.data.length>0){var p=data.data[0];
-      return{nom:p.denomination||p.libelle||null,forme:null,titulaire:null};}
-    return null;
-  }));
-  // global search
-  promises.push(tryFetch('https://bdpmgf.vedielaute.fr/api/medicaments/search?q='+g13+'&limit=3',function(data){
-    if(data&&data.data&&data.data.length>0){var s=data.data[0];
-      return{nom:s.denomination||s.elementPharmaceutique||s.libelle||null,forme:s.formePharmaceutique||null,titulaire:s.titulaire||null};}
-    return null;
-  }));
-
-  // 2. medicaments-api.giygas.dev — multiple param attempts
+  // 1. medicaments-api.giygas.dev ?cip= — BEST source for CIP13 (returns full med info)
   if(/^340/.test(g13)){
     promises.push(tryFetch('https://medicaments-api.giygas.dev/v1/medicaments?cip='+g13,function(data){
       if(!data)return null;
@@ -329,6 +315,20 @@ async function lookupMed(medInfo){
       if(Array.isArray(data)&&data.length>0){var m=data[0];return{nom:m.elementPharmaceutique||m.denomination||null,forme:m.formePharmaceutique||null,titulaire:m.titulaire||null};}
       return null;
     }));
+  }
+
+  // 2. bdpmgf.vedielaute.fr — BDPM mirror (CORS OK, no auth)
+  // global search (better than presentations endpoint which returns packaging names)
+  promises.push(tryFetch('https://bdpmgf.vedielaute.fr/api/medicaments/search?q='+g13+'&limit=3',function(data){
+    if(data&&data.data&&data.data.length>0){var s=data.data[0];
+      var nom=s.denomination||s.elementPharmaceutique||null;
+      if(!nom)return null;
+      return{nom:nom,forme:s.formePharmaceutique||null,titulaire:s.titulaire||null};}
+    return null;
+  }));
+
+  // 3. medicaments-api.giygas.dev ?search= fallback
+  if(/^340/.test(g13)){
     promises.push(tryFetch('https://medicaments-api.giygas.dev/v1/medicaments?search='+g13,function(data){
       if(Array.isArray(data)&&data.length>0){var m=data[0];return{nom:m.elementPharmaceutique||m.denomination||null,forme:m.formePharmaceutique||null,titulaire:m.titulaire||null};}
       if(data&&data.data&&data.data.length>0){var m2=data.data[0];return{nom:m2.elementPharmaceutique||m2.denomination||null,forme:m2.formePharmaceutique||null,titulaire:m2.titulaire||null};}
@@ -336,7 +336,7 @@ async function lookupMed(medInfo){
     }));
   }
 
-  // 3. Open Food Facts (sometimes has OTC pharma)
+  // 4. Open Food Facts (sometimes has OTC pharma)
   promises.push(tryFetch('https://world.openfoodfacts.org/api/v2/product/'+g13+'.json?fields=product_name,brands',function(data){
     if(data&&data.status===1&&data.product&&data.product.product_name){
       return{nom:data.product.product_name,forme:null,titulaire:data.product.brands||null};}return null;
