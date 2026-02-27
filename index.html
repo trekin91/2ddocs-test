@@ -348,7 +348,7 @@ function setPill(type, text) {
           if (r && r.length > 0 && r[0].rawValue && r[0].rawValue.length > 5 && scanning) {
             scanning = false;
             feedback();
-            handleResult(r[0].rawValue, r[0].format || 'unknown');
+            handleResult(r[0].rawValue, r[0].format || 'unknown', r[0]);
           }
         }).catch(function() {});
       } catch(e) {}
@@ -370,7 +370,7 @@ function setPill(type, text) {
         var r = await detector.detect(variants[i]);
         if (r && r.length > 0 && r[0].rawValue && r[0].rawValue.length > 5) {
           feedback();
-          handleResult(r[0].rawValue, r[0].format || 'unknown');
+          handleResult(r[0].rawValue, r[0].format || 'unknown', r[0]);
           return;
         }
       } catch(e) {}
@@ -393,7 +393,7 @@ function setPill(type, text) {
           var r = await detector.detect(variants[i]);
           if (r && r.length > 0 && r[0].rawValue && r[0].rawValue.length > 5) {
             feedback();
-            handleResult(r[0].rawValue, r[0].format || 'unknown');
+            handleResult(r[0].rawValue, r[0].format || 'unknown', r[0]);
             return;
           }
         } catch(e) {}
@@ -428,70 +428,359 @@ function setPill(type, text) {
   // ═══════════════════════════════════════
   // RESULT HANDLING
   // ═══════════════════════════════════════
-  async function handleResult(raw, format) {
+  async function handleResult(raw, format, detectedBarcode) {
     lastRaw = raw;
     stopScanning();
-    var parsed = parse2DDoc(raw);
-    var sigResult = null;
-    if (parsed.isValid && parsed.signature && parsed.messageToVerify) {
-      sigResult = await verifySignature(parsed);
+
+    var rawBytes = null;
+    if (detectedBarcode) {
+      if (detectedBarcode.rawBytes) rawBytes = detectedBarcode.rawBytes;
+      else if (detectedBarcode.rawData) rawBytes = new Uint8Array(detectedBarcode.rawData);
     }
-    renderResults(raw, format, parsed, sigResult);
+
+    // Smart detection: GS1 DataMatrix, 2D-Doc, or plain barcode
+    var result = { type: 'plain', raw: raw, format: format };
+
+    if (isGS1(raw)) {
+      result = { type: 'gs1', data: parseGS1(raw), raw: raw, format: format };
+    } else {
+      var parsed = parse2DDoc(raw, rawBytes);
+      if (parsed.isValid && parsed.fields.length > 0) {
+        var sigResult = null;
+        if (parsed.signature && parsed.messageToVerify) {
+          sigResult = await verifySignature(parsed);
+        }
+        result = { type: '2ddoc', data: parsed, sig: sigResult, raw: raw, format: format };
+      }
+    }
+
+    renderResults(result);
     resultsPanel.classList.add('open');
   }
 
   // ═══════════════════════════════════════
-  // 2D-DOC PARSER (ANTS spec)
+  // GS1 DATAMATRIX PARSER
   // ═══════════════════════════════════════
-  function parse2DDoc(raw) {
-    var res = { isValid: false, header: {}, fields: [], signature: null, messageToVerify: null, raw: raw };
-    try {
-      var pos = 0, hStart = -1;
-      for (var i = 0; i < Math.min(10, raw.length - 1); i++) {
-        if (raw[i] === 'D' && raw[i+1] === 'C') { hStart = i; break; }
-      }
-      if (hStart >= 0) { pos = hStart + 2; res.header.marker = 'DC'; res.isValid = true; }
-      else if (/^0[1-4]/.test(raw)) { res.isValid = true; }
+  function isGS1(raw) {
+    // GS1 DataMatrix starts with ]d2 (symbology identifier) or FNC1 (0xE8/232)
+    // or contains recognizable AI patterns like (01), 01 + 14 digits
+    if (raw.indexOf(']d2') === 0 || raw.indexOf(']Q3') === 0 || raw.indexOf(']C1') === 0) return true;
+    if (raw.charCodeAt(0) === 232) return true; // FNC1
 
-      if (res.isValid) {
-        res.header.version = raw.substring(pos, pos + 2); pos += 2;
-        var ver = parseInt(res.header.version, 10);
-        if (ver >= 1 && ver <= 4) {
-          res.header.caId = raw.substring(pos, pos + 4); pos += 4;
-          res.header.certId = raw.substring(pos, pos + 4); pos += 4;
-          res.header.emissionDate = hexDate(raw.substring(pos, pos + 4)); pos += 4;
-          res.header.signatureDate = hexDate(raw.substring(pos, pos + 4)); pos += 4;
-          res.header.docTypeId = raw.substring(pos, pos + 2); pos += 2;
+    // Heuristic: starts with AI 01 (GTIN) — 01 + 14 digits
+    if (/^01\d{14}/.test(raw)) return true;
+    // Or starts with (01)
+    if (/^\(01\)/.test(raw)) return true;
+
+    return false;
+  }
+
+  function parseGS1(raw) {
+    var res = { fields: [], diag: {} };
+    var data = raw;
+
+    // Strip symbology identifier
+    if (data.indexOf(']d2') === 0 || data.indexOf(']Q3') === 0 || data.indexOf(']C1') === 0) {
+      data = data.substring(3);
+    }
+    if (data.charCodeAt(0) === 232) data = data.substring(1); // FNC1
+
+    // Strip parentheses format: (01)12345 → 0112345
+    data = data.replace(/\((\d{2,4})\)/g, '$1');
+
+    res.diag.cleaned = data.substring(0, 40) + '…';
+
+    var pos = 0;
+    var maxIter = 50;
+
+    while (pos < data.length && maxIter-- > 0) {
+      // Skip GS separators
+      if (data.charCodeAt(pos) === 0x1D || data.charCodeAt(pos) <= 0x1F) { pos++; continue; }
+
+      var matched = false;
+
+      // Try each known AI
+      for (var ai = 0; ai < GS1_AIS.length; ai++) {
+        var def = GS1_AIS[ai];
+        var code = def[0];
+        if (data.substring(pos, pos + code.length) !== code) continue;
+
+        pos += code.length;
+        var val = '';
+
+        if (def[2] > 0) {
+          // Fixed length
+          val = data.substring(pos, pos + def[2]);
+          pos += def[2];
+        } else {
+          // Variable length — read until GS (0x1D) or end
+          var end = data.length;
+          for (var vi = pos; vi < data.length; vi++) {
+            if (data.charCodeAt(vi) === 0x1D || data.charCodeAt(vi) <= 0x1F) { end = vi; break; }
+          }
+          val = data.substring(pos, end);
+          pos = end;
+        }
+
+        res.fields.push({ ai: code, label: def[1], value: formatGS1Value(code, val), rawValue: val });
+        matched = true;
+        break;
+      }
+
+      if (!matched) {
+        // Unknown AI, try to skip gracefully
+        // Collect remaining as unknown
+        var remainder = data.substring(pos);
+        if (remainder.length > 0) {
+          res.fields.push({ ai: '??', label: 'Données non parsées', value: remainder, rawValue: remainder });
+        }
+        break;
+      }
+    }
+
+    return res;
+  }
+
+  function formatGS1Value(ai, val) {
+    // Format expiry date YYMMDD
+    if (ai === '17' && val.length === 6) {
+      return val.substring(4, 6) + '/' + val.substring(2, 4) + '/20' + val.substring(0, 2);
+    }
+    // Format production date
+    if (ai === '11' && val.length === 6) {
+      return val.substring(4, 6) + '/' + val.substring(2, 4) + '/20' + val.substring(0, 2);
+    }
+    // Format weight (last digit = decimal places)
+    if (/^31[0-9]{2}$/.test(ai)) {
+      var dec = parseInt(ai[3], 10);
+      var num = parseInt(val, 10);
+      return (num / Math.pow(10, dec)).toFixed(dec) + ' kg';
+    }
+    return val;
+  }
+
+  // GS1 Application Identifiers: [code, label, fixedLength (0=variable)]
+  var GS1_AIS = [
+    ['00', 'SSCC', 18],
+    ['01', 'GTIN', 14],
+    ['02', 'GTIN contenu', 14],
+    ['10', 'N° Lot', 0],
+    ['11', 'Date production', 6],
+    ['13', 'Date emballage', 6],
+    ['15', 'Date util. optimale', 6],
+    ['17', 'Date expiration', 6],
+    ['20', 'Variante produit', 2],
+    ['21', 'N° Série', 0],
+    ['22', 'Données secondaires', 0],
+    ['235', 'Extension TPX', 0],
+    ['240', 'Identification complémentaire', 0],
+    ['241', 'N° Client', 0],
+    ['242', 'Made-to-Order variation', 0],
+    ['250', 'N° Série secondaire', 0],
+    ['251', 'Réf. source', 0],
+    ['253', 'Identifiant global document', 0],
+    ['30', 'Quantité', 0],
+    ['310', 'Poids net (kg)', 6],
+    ['3100','Poids net (kg)', 6],
+    ['3101','Poids net (kg) x0.1', 6],
+    ['3102','Poids net (kg) x0.01', 6],
+    ['3103','Poids net (kg) x0.001', 6],
+    ['320', 'Poids net (lb)', 6],
+    ['37', 'Nombre d\'unités', 0],
+    ['400', 'N° Commande', 0],
+    ['410', 'Ship to GLN', 13],
+    ['411', 'Bill to GLN', 13],
+    ['412', 'Purchase from GLN', 13],
+    ['414', 'GLN lieu physique', 13],
+    ['415', 'GLN factureur', 13],
+    ['421', 'Code postal ship-to', 0],
+    ['422', 'Pays d\'origine', 3],
+    ['7003', 'Date/heure expiration', 10],
+    ['710', 'NHRN Allemagne', 0],
+    ['711', 'NHRN France (CIP)', 0],
+    ['712', 'NHRN Espagne', 0],
+    ['713', 'NHRN Brésil', 0],
+    ['714', 'NHRN Portugal', 0],
+    ['91', 'Info interne', 0],
+    ['92', 'Info interne', 0],
+    ['93', 'Info interne', 0],
+    ['94', 'Info interne', 0],
+    ['95', 'Info interne', 0],
+  ];
+  // Sort by code length DESC so longer codes match first (e.g. 3103 before 310)
+  GS1_AIS.sort(function(a, b) { return b[0].length - a[0].length || a[0].localeCompare(b[0]); });
+
+  // ═══════════════════════════════════════
+  // 2D-DOC PARSER (ANTS spec) — robust
+  // ═══════════════════════════════════════
+  function parse2DDoc(raw, rawBytes) {
+    var res = { isValid: false, header: {}, fields: [], signature: null, messageToVerify: null, raw: raw, diag: {} };
+
+    // If we have rawBytes, try to use them for better control char preservation
+    var workStr = raw;
+    if (rawBytes && rawBytes.length > 0) {
+      // Decode as ISO-8859-1 to preserve all byte values including control chars
+      try {
+        workStr = new TextDecoder('iso-8859-1').decode(rawBytes);
+        res.diag.source = 'rawBytes (ISO-8859-1)';
+      } catch(e) {
+        res.diag.source = 'rawValue (fallback)';
+      }
+    } else {
+      res.diag.source = 'rawValue';
+    }
+
+    // Diagnostic: count control chars
+    var ctrlCount = 0;
+    for (var ci = 0; ci < workStr.length; ci++) {
+      var cc = workStr.charCodeAt(ci);
+      if (cc === 0x1D || cc === 0x1E || cc === 0x1F) ctrlCount++;
+    }
+    res.diag.controlChars = ctrlCount;
+    res.diag.length = workStr.length;
+
+    try {
+      var pos = 0;
+
+      // ── Find DC marker ──
+      var hStart = -1;
+      for (var i = 0; i < Math.min(10, workStr.length - 1); i++) {
+        if (workStr[i] === 'D' && workStr[i+1] === 'C') { hStart = i; break; }
+      }
+
+      if (hStart >= 0) {
+        pos = hStart + 2;
+        res.header.marker = 'DC';
+        res.isValid = true;
+      } else if (/^0[1-4]/.test(workStr)) {
+        // Version without DC prefix (some old encoders)
+        res.isValid = true;
+      }
+
+      if (!res.isValid) {
+        // Not a 2D-Doc, return minimal parse
+        return res;
+      }
+
+      // ── Parse header ──
+      res.header.version = workStr.substring(pos, pos + 2); pos += 2;
+      var ver = parseInt(res.header.version, 10);
+      res.diag.version = ver;
+
+      if (ver >= 1 && ver <= 4) {
+        res.header.caId = workStr.substring(pos, pos + 4); pos += 4;
+        res.header.certId = workStr.substring(pos, pos + 4); pos += 4;
+        res.header.emissionDate = hexDate(workStr.substring(pos, pos + 4)); pos += 4;
+        res.header.signatureDate = hexDate(workStr.substring(pos, pos + 4)); pos += 4;
+        res.header.docTypeId = workStr.substring(pos, pos + 2); pos += 2;
+
+        // v3/v4 have additional perimeter ID
+        if (ver >= 3) {
+          res.header.perimeterId = workStr.substring(pos, pos + 2); pos += 2;
         }
       }
 
-      var rest = raw.substring(pos);
-      // Find signature separator (last RS 0x1E or GS 0x1D)
+      var rest = workStr.substring(pos);
+
+      // ── Find signature ──
+      // Signature is after the LAST GS (0x1D) or RS (0x1E) separator
+      // and should be >= 64 chars for ECDSA P-256
       var sigIdx = -1;
       for (var j = rest.length - 1; j >= 0; j--) {
         var ch = rest.charCodeAt(j);
-        if (ch === 0x1E || ch === 0x1D) {
-          if (rest.length - j - 1 >= 40) { sigIdx = j; break; }
+        if (ch === 0x1E || ch === 0x1D || ch === 0x1F) {
+          var remaining = rest.length - j - 1;
+          if (remaining >= 40) { sigIdx = j; break; }
+        }
+      }
+
+      // Also try to find signature by looking for long hex-only suffix (no separators case)
+      if (sigIdx < 0) {
+        var hexMatch = rest.match(/([0-9A-Fa-f]{64,})$/);
+        if (hexMatch) {
+          sigIdx = rest.length - hexMatch[1].length - 1;
+          res.diag.sigDetection = 'hex-suffix';
         }
       }
 
       var msg = sigIdx >= 0 ? rest.substring(0, sigIdx) : rest;
       if (sigIdx >= 0) {
-        res.signature = rest.substring(sigIdx + 1);
-        // Message to verify = everything from start to the separator (inclusive of header)
-        res.messageToVerify = raw.substring(0, pos + sigIdx);
+        var sepChar = rest.charCodeAt(sigIdx);
+        res.signature = rest.substring(sigIdx + (sepChar <= 0x1F ? 1 : 0));
+        res.messageToVerify = workStr.substring(0, pos + sigIdx);
+        res.diag.sigLength = res.signature.length;
       }
 
-      var parts = msg.split(/[\x1D\x1E\x1F]/);
-      for (var k = 0; k < parts.length; k++) {
-        var p = parts[k];
-        if (p.length < 3) continue;
-        var tag = p.substring(0, 2).toUpperCase();
-        var val = p.substring(2);
-        res.fields.push({ tag: tag, label: TAGS[tag] ? TAGS[tag].label : 'Champ ' + tag, value: val });
+      // ── Parse fields ──
+      if (ctrlCount > 0) {
+        // Normal parsing with control characters
+        var parts = msg.split(/[\x1D\x1E\x1F]/);
+        for (var k = 0; k < parts.length; k++) {
+          var p = parts[k];
+          if (p.length < 3) continue;
+          var tag = p.substring(0, 2).toUpperCase();
+          var val = p.substring(2);
+          res.fields.push({ tag: tag, label: TAGS[tag] ? TAGS[tag].label : 'Champ ' + tag, value: val });
+        }
+        res.diag.parseMethod = 'control-chars (' + ctrlCount + ' sép.)';
+      } else {
+        // No control chars — try tag-by-tag scanning
+        res.diag.parseMethod = 'tag-scanning (pas de sép.)';
+        parseFieldsByTags(msg, res.fields);
       }
-    } catch(e) { res.parseError = e.message; }
+
+    } catch(e) {
+      res.parseError = e.message;
+    }
     return res;
+  }
+
+  // Parse fields when control characters are missing
+  // Uses known tag patterns and field length conventions
+  function parseFieldsByTags(msg, fields) {
+    if (!msg || msg.length < 3) return;
+
+    // Known field length patterns per doc type
+    // For variable-length fields, we scan until next known tag
+    var allTags = Object.keys(TAGS);
+    var pos = 0;
+    var maxIter = 100; // safety
+
+    while (pos < msg.length - 2 && maxIter-- > 0) {
+      var tag = msg.substring(pos, pos + 2).toUpperCase();
+
+      // Check if this looks like a valid tag
+      if (TAGS[tag]) {
+        pos += 2;
+        // Find the end: look for the next valid tag
+        var end = msg.length;
+        for (var scan = pos + 1; scan < msg.length - 1; scan++) {
+          var nextTag = msg.substring(scan, scan + 2).toUpperCase();
+          if (TAGS[nextTag]) {
+            end = scan;
+            break;
+          }
+          // Also stop at control chars just in case
+          if (msg.charCodeAt(scan) <= 0x1F) {
+            end = scan;
+            break;
+          }
+        }
+        var val = msg.substring(pos, end);
+        if (val.length > 0) {
+          fields.push({ tag: tag, label: TAGS[tag].label, value: val });
+        }
+        pos = end;
+      } else {
+        // Unknown tag, try advancing one char
+        pos++;
+      }
+    }
+
+    // If no fields found with tag scanning, show the whole message as a single field
+    if (fields.length === 0 && msg.length > 0) {
+      fields.push({ tag: '??', label: 'Données brutes (non parsées)', value: msg });
+    }
   }
 
   function hexDate(hex) {
@@ -684,61 +973,128 @@ function setPill(type, text) {
   // ═══════════════════════════════════════
   // RENDER
   // ═══════════════════════════════════════
-  function renderResults(raw, format, p, sig) {
+  function renderResults(result) {
+    var raw = result.raw;
+    var format = result.format;
+    var fmtLabel = (format || 'unknown').replace(/_/g, ' ').toUpperCase();
     var h = '';
 
-    // Format badge
-    var fmtLabel = (format || 'unknown').replace(/_/g, ' ').toUpperCase();
-    if (p.isValid) {
-      h += '<div class="result-badge success">✓ 2D-Doc — ' + fmtLabel + '</div>';
-    } else {
-      h += '<div class="result-badge warning">' + fmtLabel + '</div>';
-    }
+    if (result.type === 'gs1') {
+      // ── GS1 DataMatrix ──
+      var gs1 = result.data;
+      h += '<div class="result-badge success">📦 GS1 DataMatrix</div>';
 
-    // Signature badge
-    if (sig) {
-      if (sig.status === 'verified') {
-        h += '<div class="sig-badge verified">🔒 ' + sig.message + '</div>';
-      } else if (sig.status === 'invalid') {
-        h += '<div class="sig-badge invalid">🔓 ' + sig.message + '</div>';
-      } else {
-        h += '<div class="sig-badge unknown">🔑 ' + sig.message + '</div>';
+      // Highlight key fields at top
+      var gtin = gs1.fields.find(function(f) { return f.ai === '01'; });
+      var lot = gs1.fields.find(function(f) { return f.ai === '10'; });
+      var exp = gs1.fields.find(function(f) { return f.ai === '17'; });
+      var serial = gs1.fields.find(function(f) { return f.ai === '21'; });
+
+      if (gtin || exp) {
+        h += '<div class="field-card" style="margin-bottom:16px;border-color:var(--accent)">';
+        if (gtin) h += '<div class="field-value" style="font-size:1.1rem;margin-bottom:8px">GTIN: ' + esc(gtin.value) + '</div>';
+        if (lot) h += '<div class="field-label" style="font-size:.88rem;color:var(--text)">Lot: <strong>' + esc(lot.value) + '</strong></div>';
+        if (exp) h += '<div class="field-label" style="font-size:.88rem;color:var(--text)">Expiration: <strong>' + esc(exp.value) + '</strong></div>';
+        if (serial) h += '<div class="field-label" style="font-size:.88rem;color:var(--text)">Série: <strong>' + esc(serial.value) + '</strong></div>';
+        h += '</div>';
       }
-    }
 
-    // Header
-    if (p.header.version) {
-      var hd = p.header;
-      h += '<div class="field-card" style="margin-bottom:16px">';
-      h += '<div class="field-tag">EN-TÊTE</div>';
-      h += '<div class="field-label">Version ' + hd.version + ' ' + (hd.marker || '') + '</div>';
-      if (hd.caId) h += '<div class="field-label">CA: ' + hd.caId + ' — Cert: ' + hd.certId + '</div>';
-      if (hd.emissionDate) h += '<div class="field-label">Émis: ' + hd.emissionDate + ' — Signé: ' + hd.signatureDate + '</div>';
-      if (hd.docTypeId) h += '<div class="field-value" style="margin-top:6px">' + (DOC_TYPES[hd.docTypeId] || 'Type ' + hd.docTypeId) + '</div>';
-      h += '</div>';
-    }
-
-    // Fields
-    if (p.fields.length) {
+      // All fields
       h += '<div class="fields-grid">';
-      for (var i = 0; i < p.fields.length; i++) {
-        var f = p.fields[i];
-        var v = f.value;
-        if (/montant|net|impôt|revenu/i.test(f.label)) {
-          var n = parseInt(v, 10);
-          if (!isNaN(n) && n > 0) v = (n / 100).toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' });
-        }
-        h += '<div class="field-card"><div class="field-tag">' + f.tag + '</div><div class="field-label">' + f.label + '</div><div class="field-value">' + esc(v) + '</div></div>';
+      for (var i = 0; i < gs1.fields.length; i++) {
+        var f = gs1.fields[i];
+        h += '<div class="field-card"><div class="field-tag">AI (' + esc(f.ai) + ')</div>';
+        h += '<div class="field-label">' + esc(f.label) + '</div>';
+        h += '<div class="field-value">' + esc(f.value) + '</div></div>';
       }
       h += '</div>';
+
+    } else if (result.type === '2ddoc') {
+      // ── 2D-Doc ANTS ──
+      var p = result.data;
+      var sig = result.sig;
+
+      h += '<div class="result-badge success">✓ 2D-Doc — ' + fmtLabel + '</div>';
+
+      if (sig) {
+        var cls = sig.status === 'verified' ? 'verified' : sig.status === 'invalid' ? 'invalid' : 'unknown';
+        var icon = sig.status === 'verified' ? '🔒' : sig.status === 'invalid' ? '🔓' : '🔑';
+        h += '<div class="sig-badge ' + cls + '">' + icon + ' ' + esc(sig.message) + '</div>';
+      }
+
+      if (p.header.version) {
+        var hd = p.header;
+        h += '<div class="field-card" style="margin-bottom:16px">';
+        h += '<div class="field-tag">EN-TÊTE 2D-DOC</div>';
+        h += '<div class="field-label">Version ' + hd.version + ' ' + (hd.marker || '') + '</div>';
+        if (hd.caId) h += '<div class="field-label">CA: ' + esc(hd.caId) + ' — Certificat: ' + esc(hd.certId) + '</div>';
+        if (hd.emissionDate) h += '<div class="field-label">Émission: ' + esc(hd.emissionDate) + ' — Signature: ' + esc(hd.signatureDate) + '</div>';
+        if (hd.perimeterId) h += '<div class="field-label">Périmètre: ' + esc(hd.perimeterId) + '</div>';
+        if (hd.docTypeId) h += '<div class="field-value" style="margin-top:6px">' + esc(DOC_TYPES[hd.docTypeId] || 'Type ' + hd.docTypeId) + '</div>';
+        h += '</div>';
+      }
+
+      if (p.fields.length > 0) {
+        h += '<div class="fields-grid">';
+        for (var j = 0; j < p.fields.length; j++) {
+          var ff = p.fields[j];
+          var v = ff.value;
+          if (/montant|net|impôt|revenu/i.test(ff.label)) {
+            var n = parseInt(v, 10);
+            if (!isNaN(n) && n > 0) v = (n / 100).toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' });
+          }
+          if (/date/i.test(ff.label) && /^\d{8}$/.test(v)) {
+            v = v.substring(0, 2) + '/' + v.substring(2, 4) + '/' + v.substring(4);
+          }
+          h += '<div class="field-card"><div class="field-tag">' + esc(ff.tag) + '</div>';
+          h += '<div class="field-label">' + esc(ff.label) + '</div>';
+          h += '<div class="field-value">' + esc(v) + '</div></div>';
+        }
+        h += '</div>';
+      }
+
+      if (p.signature) {
+        h += '<div class="raw-data" style="margin-top:16px"><div class="raw-data-label">Signature (' + p.signature.length + ' car.)</div>';
+        h += '<pre style="color:var(--warning)">' + esc(p.signature.substring(0, 120));
+        if (p.signature.length > 120) h += '…';
+        h += '</pre></div>';
+      }
+
+      // Diagnostic
+      if (p.diag) {
+        h += '<details style="margin-top:16px"><summary style="font-size:.7rem;color:var(--text-dim);cursor:pointer">Diagnostic technique</summary>';
+        h += '<div class="raw-data" style="margin-top:8px"><pre style="color:var(--text-dim);font-size:.7rem">';
+        h += 'Source: ' + (p.diag.source || '?') + '\n';
+        h += 'Séparateurs: ' + (p.diag.controlChars || 0) + '\n';
+        h += 'Parsing: ' + (p.diag.parseMethod || '?') + '\n';
+        h += 'Champs: ' + p.fields.length + '\n';
+        h += '\nHex (30 premiers):\n';
+        for (var hi = 0; hi < Math.min(30, raw.length); hi++) {
+          h += raw.charCodeAt(hi).toString(16).padStart(2, '0') + ' ';
+          if ((hi + 1) % 16 === 0) h += '\n';
+        }
+        h += '</pre></div></details>';
+      }
+
+    } else {
+      // ── Plain barcode ──
+      h += '<div class="result-badge warning">' + fmtLabel + '</div>';
+      h += '<div class="field-card" style="margin-top:12px">';
+      h += '<div class="field-tag">' + fmtLabel + '</div>';
+      h += '<div class="field-label">Valeur décodée</div>';
+      h += '<div class="field-value" style="font-size:1.2rem;letter-spacing:.02em">' + esc(raw) + '</div>';
+      h += '</div>';
+
+      // For EAN/UPC, show product lookup hint
+      if (/^(ean|upc)/i.test(format)) {
+        h += '<div style="margin-top:12px;font-size:.78rem;color:var(--text-dim)">Astuce : recherchez ce code sur Open Food Facts ou un moteur de recherche pour identifier le produit.</div>';
+      }
     }
 
-    // Raw
-    h += '<div class="raw-data" style="margin-top:20px"><div class="raw-data-label">Brut — ' + raw.length + ' car.</div><pre>' + esc(fmtRaw(raw)) + '</pre></div>';
-
-    if (p.signature) {
-      h += '<div class="raw-data"><div class="raw-data-label">Signature (' + p.signature.length + ')</div><pre style="color:var(--warning)">' + esc(p.signature.substring(0, 120)) + '…</pre></div>';
-    }
+    // Raw data (always shown)
+    h += '<div class="raw-data" style="margin-top:20px">';
+    h += '<div class="raw-data-label">Données brutes — ' + raw.length + ' car.</div>';
+    h += '<pre>' + esc(fmtRaw(raw)) + '</pre></div>';
 
     resultsBody.innerHTML = h;
   }

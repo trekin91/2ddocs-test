@@ -1,4 +1,4 @@
-const CACHE_NAME = '2ddoc-scanner-v9';
+const CACHE_NAME = '2ddoc-scanner-v11';
 const ASSETS = ['/index.html', '/manifest.json'];
 
 self.addEventListener('install', event => {
