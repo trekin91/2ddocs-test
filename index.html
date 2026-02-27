@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
   <meta name="theme-color" content="#0b1120">
-  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <link rel="manifest" href="manifest.json">
   <title>InfraVetScan</title>
@@ -281,45 +281,47 @@ function detectMedType(gs1){
 // ═══════════════════════════════════════
 async function lookupMed(medInfo){
   var g13=medInfo.gtin;
-  var g14=g13.length===13?'0'+g13:g13;
+  if(!g13)return null;
   if(g13.length===14&&g13[0]==='0')g13=g13.substring(1);
-  var results=[];
-
-  // Fire all lookups in parallel for speed
+  var g14=g13.length===13?'0'+g13:g13;
   var promises=[];
 
-  // 1. Open Medicaments (human CIP13) — CORS OK
-  if(medInfo.cip13){
-    promises.push(tryFetch('https://api.open-medicaments.fr/api/v1/medicaments?query='+medInfo.cip13+'&limit=1',function(data){
-      if(data&&data.length>0){var m=data[0];return{nom:m.denomination||m.nom||null,forme:m.formePharmaceutique||null,titulaire:m.titulaires?m.titulaires.join(', '):null};}return null;
+  // 1. medicaments-api.giygas.dev — CIP13 lookup (human meds, CORS OK)
+  if(medInfo.cip13||/^340/.test(g13)){
+    var cip=medInfo.cip13||g13;
+    promises.push(tryFetch('https://medicaments-api.giygas.dev/v1/medicaments?cip13='+cip,function(data){
+      if(data&&data.length>0){var m=data[0];
+        return{nom:m.elementPharmaceutique||m.denomination||null,forme:m.formePharmaceutique||null,titulaire:m.titulaire||null};}return null;
     }));
   }
 
-  // 2. ANMV/ANSES vet database — Opendatasoft, CORS OK
-  promises.push(tryFetch('https://data.anmv.anses.fr/api/explore/v2.1/catalog/datasets/liste-des-presentations-commercialisees-de-medicaments-veterinaires/records?limit=5&where=code_gtin%3D%22'+g13+'%22+OR+code_gtin%3D%22'+g14+'%22',function(data){
-    if(data&&data.results&&data.results.length>0){var r=data.results[0];
-      return{nom:r.nom_du_medicament||r.denomination||null,forme:r.forme_pharmaceutique||null,titulaire:r.titulaire_amm||r.laboratoire||null,amm:r.numero_amm||null,especes:r.especes_de_destination||null};}return null;
+  // 2. bdpmgf.vedielaute.fr — BDPM mirror (human meds, CORS OK)
+  promises.push(tryFetch('https://bdpmgf.vedielaute.fr/api/medicaments/presentations?q='+g13+'&limit=5',function(data){
+    if(data&&data.data&&data.data.length>0){var p=data.data[0];
+      return{nom:p.denomination||p.libelle||null,forme:null,titulaire:null};}
+    if(data&&Array.isArray(data)&&data.length>0){var p2=data[0];
+      return{nom:p2.denomination||p2.libelle||null,forme:null,titulaire:null};}
+    return null;
   }));
 
-  // 3. Open Food Facts — definitely CORS OK
+  // 3. Open Food Facts (universal EAN lookup, CORS OK)
   promises.push(tryFetch('https://world.openfoodfacts.org/api/v2/product/'+g13+'.json?fields=product_name,brands',function(data){
     if(data&&data.status===1&&data.product&&data.product.product_name){
       return{nom:data.product.product_name,forme:null,titulaire:data.product.brands||null};}return null;
   }));
 
-  // 4. Open Beauty Facts (for parapharma) — CORS OK
+  // 4. Open Beauty Facts (parapharma, CORS OK)
   promises.push(tryFetch('https://world.openbeautyfacts.org/api/v2/product/'+g13+'.json?fields=product_name,brands',function(data){
     if(data&&data.status===1&&data.product&&data.product.product_name){
       return{nom:data.product.product_name,forme:null,titulaire:data.product.brands||null};}return null;
   }));
 
-  // 5. Open Pet Food Facts (for vet products) — CORS OK
+  // 5. Open Pet Food Facts (vet products, CORS OK)
   promises.push(tryFetch('https://world.openpetfoodfacts.org/api/v2/product/'+g13+'.json?fields=product_name,brands',function(data){
     if(data&&data.status===1&&data.product&&data.product.product_name){
       return{nom:data.product.product_name,forme:null,titulaire:data.product.brands||null};}return null;
   }));
 
-  // Wait for all (with individual timeouts)
   var settled=await Promise.allSettled(promises);
   for(var i=0;i<settled.length;i++){
     if(settled[i].status==='fulfilled'&&settled[i].value){
