@@ -1,8 +1,6 @@
-const CACHE_NAME = 'infravetscan-v4';
-const ASSETS = ['/index.html', '/manifest.json'];
+const CACHE_NAME = 'infravetscan-v5';
 
 self.addEventListener('install', event => {
-  event.waitUntil(caches.open(CACHE_NAME).then(c => c.addAll(ASSETS)));
   self.skipWaiting();
 });
 
@@ -14,18 +12,26 @@ self.addEventListener('activate', event => {
 });
 
 self.addEventListener('fetch', event => {
-  // Network first for HTML, cache first for others
-  if (event.request.url.includes('.html') || event.request.url.endsWith('/')) {
+  const url = event.request.url;
+  if (event.request.method !== 'GET') return;
+  if (url.includes('/api/') || url.includes('openfoodfacts') || url.includes('giygas') || url.includes('vedielaute') || url.includes('openbeautyfacts') || url.includes('openpetfoodfacts')) return;
+
+  if (url.endsWith('/') || url.includes('.html')) {
     event.respondWith(
       fetch(event.request).then(r => {
-        const clone = r.clone();
-        caches.open(CACHE_NAME).then(c => c.put(event.request, clone));
+        if (r.ok) { const cl = r.clone(); caches.open(CACHE_NAME).then(c => c.put(event.request, cl)); }
         return r;
       }).catch(() => caches.match(event.request))
     );
   } else {
     event.respondWith(
-      caches.match(event.request).then(cached => cached || fetch(event.request))
+      caches.match(event.request).then(cached => {
+        if (cached) return cached;
+        return fetch(event.request).then(r => {
+          if (r.ok) { const cl = r.clone(); caches.open(CACHE_NAME).then(c => c.put(event.request, cl)); }
+          return r;
+        });
+      })
     );
   }
 });
