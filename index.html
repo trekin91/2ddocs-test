@@ -3,1171 +3,230 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <meta name="theme-color" content="#0a0a0f">
+  <meta name="theme-color" content="#0c1117">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <link rel="manifest" href="manifest.json">
-  <title>2D-Doc Scanner</title>
+  <title>VetScan — Scanner GS1</title>
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Outfit:wght@300;400;600;700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
     *{margin:0;padding:0;box-sizing:border-box}
-    :root{--bg:#0a0a0f;--surface:#13131a;--surface2:#1c1c28;--border:#2a2a3a;--text:#e8e8f0;--text-dim:#8888a0;--accent:#00e5a0;--accent-dim:#00e5a020;--danger:#ff4466;--warning:#ffaa00;--radius:16px}
-    html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Outfit',sans-serif;overflow:hidden;-webkit-tap-highlight-color:transparent}
-    .app{display:flex;flex-direction:column;height:100dvh;max-width:500px;margin:0 auto}
-
-    /* Header */
-    .header{padding:16px 20px;display:flex;align-items:center;gap:12px;z-index:10;background:var(--bg);border-bottom:1px solid var(--border)}
-    .header-icon{width:36px;height:36px;background:var(--accent);border-radius:10px;display:grid;place-items:center;flex-shrink:0}
-    .header-icon svg{width:20px;height:20px}
-    .header h1{font-size:1.15rem;font-weight:700;letter-spacing:-0.02em}
-    .header small{font-size:.7rem;color:var(--text-dim);font-weight:400}
-    .status-pill{margin-left:auto;display:flex;align-items:center;gap:6px;font-size:.65rem;padding:4px 10px;border-radius:20px;background:var(--surface2);color:var(--text-dim);font-family:'JetBrains Mono',monospace;white-space:nowrap;transition:all .3s}
-    .status-pill .dot{width:7px;height:7px;border-radius:50%;transition:background .3s}
-    .status-pill.ok .dot{background:var(--accent)}
-    .status-pill.ok{color:var(--accent)}
-    .status-pill.warn .dot{background:var(--warning)}
-    .status-pill.warn{color:var(--warning)}
-    .status-pill.err .dot{background:var(--danger)}
-    .status-pill.err{color:var(--danger)}
-    .status-pill.loading .dot{background:var(--warning);animation:blink 1s ease infinite}
-    @keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}
-
-    /* Camera */
-    .camera-container{position:relative;flex:1;background:#000;overflow:hidden;display:flex;align-items:center;justify-content:center}
+    :root{
+      --bg:#0c1117;--bg2:#141b23;--bg3:#1a232e;
+      --border:#243040;--border-hi:#2e4a5e;
+      --text:#e2e8f0;--text-dim:#6b8299;--text-muted:#3d5468;
+      --teal:#60b8f0;--teal-dim:#60b8f015;--teal-glow:#60b8f040;
+      --blue:#38bdf8;--blue-dim:#38bdf815;
+      --amber:#fbbf24;--amber-dim:#fbbf2415;
+      --red:#f87171;
+      --radius:14px;--radius-sm:10px;
+    }
+    html,body{height:100%;background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;overflow:hidden;-webkit-tap-highlight-color:transparent}
+    .app{display:flex;flex-direction:column;height:100dvh;max-width:500px;margin:0 auto;position:relative}
+    .header{padding:14px 20px;display:flex;align-items:center;gap:14px;z-index:10;background:linear-gradient(180deg,var(--bg) 0%,var(--bg) 80%,transparent 100%)}
+    .logo{width:40px;height:40px;border-radius:12px;background:linear-gradient(135deg,var(--teal),#3a8fd4);display:grid;place-items:center;flex-shrink:0;box-shadow:0 4px 16px var(--teal-glow)}
+    .logo svg{width:22px;height:22px}
+    .header-text h1{font-size:1.15rem;font-weight:700;letter-spacing:-.03em;line-height:1.1}
+    .header-text small{font-size:.68rem;color:var(--text-dim);font-weight:400;letter-spacing:.02em}
+    .pill{margin-left:auto;display:flex;align-items:center;gap:5px;font-size:.62rem;padding:5px 10px;border-radius:20px;background:var(--bg3);border:1px solid var(--border);color:var(--text-dim);font-family:'IBM Plex Mono',monospace;transition:all .4s;white-space:nowrap}
+    .pill .dot{width:6px;height:6px;border-radius:50%;transition:all .4s}
+    .pill.ok .dot{background:var(--teal);box-shadow:0 0 6px var(--teal-glow)}
+    .pill.ok{color:var(--teal);border-color:var(--teal-glow)}
+    .pill.loading .dot{background:var(--amber);animation:pulse 1.2s ease infinite}
+    .pill.err .dot{background:var(--red)}.pill.err{color:var(--red)}
+    @keyframes pulse{0%,100%{opacity:1}50%{opacity:.2}}
+    .camera{position:relative;flex:1;background:#000;overflow:hidden}
     #video{width:100%;height:100%;object-fit:cover}
-    .scan-zone{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:220px;height:220px;pointer-events:none}
-    .scan-zone::before{content:'';position:absolute;inset:-2px;border:2px solid var(--accent);border-radius:20px;opacity:.5}
-    .scan-corner{position:absolute;width:28px;height:28px;border-color:var(--accent);border-style:solid;border-width:0}
-    .scan-corner.tl{top:-2px;left:-2px;border-top-width:3px;border-left-width:3px;border-radius:12px 0 0 0}
-    .scan-corner.tr{top:-2px;right:-2px;border-top-width:3px;border-right-width:3px;border-radius:0 12px 0 0}
-    .scan-corner.bl{bottom:-2px;left:-2px;border-bottom-width:3px;border-left-width:3px;border-radius:0 0 0 12px}
-    .scan-corner.br{bottom:-2px;right:-2px;border-bottom-width:3px;border-right-width:3px;border-radius:0 0 12px 0}
-    .scan-line{position:absolute;top:0;left:10%;width:80%;height:2px;background:linear-gradient(90deg,transparent,var(--accent),transparent);border-radius:2px;animation:scanMove 2s ease-in-out infinite;box-shadow:0 0 12px var(--accent)}
-    @keyframes scanMove{0%,100%{top:5%;opacity:.4}50%{top:92%;opacity:1}}
-    .camera-overlay-mask{position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse 260px 260px at center,transparent 45%,rgba(0,0,0,.55) 70%)}
-
-    /* Flash overlay on decode */
-    .flash{position:absolute;inset:0;background:var(--accent);opacity:0;pointer-events:none;transition:opacity .1s}
-    .flash.on{opacity:.25;transition:none}
-
-    /* Bottom bar */
-    .bottom-bar{position:absolute;bottom:0;left:0;right:0;padding:14px 20px;background:linear-gradient(transparent,rgba(0,0,0,.85));display:flex;align-items:center;justify-content:center;z-index:5}
-    .format-pills{display:flex;gap:6px}
-    .format-pill{font-family:'JetBrains Mono',monospace;font-size:.6rem;padding:3px 8px;border-radius:6px;background:rgba(255,255,255,.08);color:var(--text-dim)}
-    .format-pill.active{background:var(--accent-dim);color:var(--accent)}
-
-    /* Controls */
-    .controls{padding:12px 20px;background:var(--bg);border-top:1px solid var(--border);display:flex;align-items:center;justify-content:center;gap:16px}
-    .btn{border:none;cursor:pointer;font-family:inherit;border-radius:12px;font-weight:600;transition:all .15s;display:flex;align-items:center;gap:8px}
-    .btn:active{transform:scale(.96)}
-    .btn-primary{background:var(--accent);color:#0a0a0f;padding:14px 28px;font-size:.92rem}
-    .btn-icon{width:48px;height:48px;background:var(--surface2);color:var(--text);display:grid;place-items:center;border-radius:50%}
-    .btn-icon svg{width:20px;height:20px}
-    .btn-icon.active{background:var(--accent-dim);color:var(--accent)}
-    .btn-capture{width:64px;height:64px;background:var(--accent);border-radius:50%;display:grid;place-items:center;border:3px solid var(--bg);box-shadow:0 0 0 2px var(--accent)}
-    .btn-capture svg{width:28px;height:28px;color:var(--bg)}
-    .file-input-wrapper{position:relative;display:inline-block}
-    .file-input-wrapper input[type="file"]{position:absolute;inset:0;opacity:0;cursor:pointer}
-
-    /* Results */
-    .results-panel{position:fixed;inset:0;background:var(--bg);z-index:100;display:flex;flex-direction:column;transform:translateY(100%);transition:transform .35s cubic-bezier(.16,1,.3,1)}
-    .results-panel.open{transform:translateY(0)}
-    .results-header{padding:16px 20px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border)}
-    .results-header h2{font-size:1.1rem;font-weight:700}
-    .btn-close{width:36px;height:36px;background:var(--surface2);border:none;color:var(--text);border-radius:50%;display:grid;place-items:center;cursor:pointer;font-size:1.2rem}
-    .results-body{flex:1;overflow-y:auto;padding:16px 20px;-webkit-overflow-scrolling:touch}
-
-    .result-badge{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:8px;font-size:.75rem;font-weight:600;margin-bottom:12px}
-    .result-badge.success{background:#00e5a018;color:var(--accent)}
-    .result-badge.warning{background:#ffaa0018;color:var(--warning)}
-    .result-badge.error{background:#ff446618;color:var(--danger)}
-
-    .sig-badge{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:8px;font-size:.72rem;font-weight:600;margin-bottom:16px;margin-left:6px}
-    .sig-badge.verified{background:#00e5a018;color:var(--accent)}
-    .sig-badge.invalid{background:#ff446618;color:var(--danger)}
-    .sig-badge.unknown{background:#ffaa0018;color:var(--warning)}
-
-    .raw-data{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:20px}
-    .raw-data-label{font-size:.7rem;text-transform:uppercase;letter-spacing:.08em;color:var(--text-dim);margin-bottom:8px}
-    .raw-data pre{font-family:'JetBrains Mono',monospace;font-size:.78rem;color:var(--accent);white-space:pre-wrap;word-break:break-all;line-height:1.6}
-
-    .fields-grid{display:flex;flex-direction:column;gap:8px}
-    .field-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 16px}
-    .field-tag{font-family:'JetBrains Mono',monospace;font-size:.68rem;color:var(--accent);font-weight:600;margin-bottom:2px}
-    .field-label{font-size:.72rem;color:var(--text-dim);margin-bottom:4px}
-    .field-value{font-size:.95rem;font-weight:600;color:var(--text);word-break:break-word}
-
-    .results-actions{padding:16px 20px;border-top:1px solid var(--border);display:flex;gap:10px}
-    .results-actions .btn{flex:1;justify-content:center}
-    .btn-secondary{background:var(--surface2);color:var(--text);padding:14px 20px;font-size:.88rem}
-
+    .overlay{position:absolute;inset:0;pointer-events:none}
+    .vignette{position:absolute;inset:0;background:radial-gradient(circle 260px at 50% 48%,transparent 30%,rgba(12,17,23,.75) 70%)}
+    .frame{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:200px;height:200px}
+    .frame-border{position:absolute;inset:0;border:1.5px solid rgba(96,184,240,.25);border-radius:16px}
+    .frame .c{position:absolute;width:24px;height:24px;border-style:solid;border-color:var(--teal)}
+    .c.tl{top:-1px;left:-1px;border-width:2.5px 0 0 2.5px;border-radius:10px 0 0 0}
+    .c.tr{top:-1px;right:-1px;border-width:2.5px 2.5px 0 0;border-radius:0 10px 0 0}
+    .c.bl{bottom:-1px;left:-1px;border-width:0 0 2.5px 2.5px;border-radius:0 0 0 10px}
+    .c.br{bottom:-1px;right:-1px;border-width:0 2.5px 2.5px 0;border-radius:0 0 10px 0}
+    .sweep{position:absolute;left:8%;width:84%;height:1.5px;background:linear-gradient(90deg,transparent,var(--teal),transparent);box-shadow:0 0 16px var(--teal-glow);border-radius:2px;animation:sweep 2.2s ease-in-out infinite}
+    @keyframes sweep{0%,100%{top:8%;opacity:.3}50%{top:90%;opacity:.9}}
+    .flash{position:absolute;inset:0;background:var(--teal);opacity:0;transition:opacity .12s;pointer-events:none}
+    .flash.on{opacity:.2;transition:none}
+    .hint{position:absolute;bottom:24px;left:50%;transform:translateX(-50%);font-size:.72rem;color:var(--text-dim);background:rgba(12,17,23,.75);backdrop-filter:blur(8px);padding:8px 16px;border-radius:20px;white-space:nowrap;border:1px solid var(--border)}
+    .controls{padding:14px 20px;background:var(--bg);border-top:1px solid var(--border);display:flex;align-items:center;justify-content:center;gap:18px}
+    .btn{border:none;cursor:pointer;font-family:inherit;transition:all .15s;display:flex;align-items:center;gap:8px}
+    .btn:active{transform:scale(.94)}
+    .btn-round{width:48px;height:48px;border-radius:50%;display:grid;place-items:center;background:var(--bg3);color:var(--text-dim);border:1px solid var(--border)}
+    .btn-round svg{width:20px;height:20px}
+    .btn-round.active{background:var(--teal-dim);color:var(--teal);border-color:var(--teal-glow)}
+    .btn-scan{width:68px;height:68px;border-radius:50%;display:grid;place-items:center;background:linear-gradient(135deg,var(--teal),#3a8fd4);color:#0c1117;border:3px solid var(--bg);box-shadow:0 0 0 2px var(--teal),0 4px 20px var(--teal-glow)}
+    .btn-scan svg{width:28px;height:28px}
+    .file-wrap{position:relative;display:inline-block}
+    .file-wrap input[type="file"]{position:absolute;inset:0;opacity:0;cursor:pointer}
+    .results{position:fixed;inset:0;background:var(--bg);z-index:100;display:flex;flex-direction:column;transform:translateY(100%);transition:transform .4s cubic-bezier(.16,1,.3,1)}
+    .results.open{transform:translateY(0)}
+    .results-head{padding:16px 20px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border)}
+    .results-head h2{font-size:1.05rem;font-weight:700}
+    .btn-x{width:34px;height:34px;background:var(--bg3);border:1px solid var(--border);color:var(--text);border-radius:50%;display:grid;place-items:center;cursor:pointer;font-size:1.1rem}
+    .results-body{flex:1;overflow-y:auto;padding:20px;-webkit-overflow-scrolling:touch}
+    .results-foot{padding:14px 20px;border-top:1px solid var(--border);display:flex;gap:10px}
+    .results-foot .btn{flex:1;justify-content:center;font-weight:600;border-radius:12px;padding:14px 0;font-size:.9rem}
+    .btn-ghost{background:var(--bg3);color:var(--text);border:1px solid var(--border)}
+    .btn-fill{background:linear-gradient(135deg,var(--teal),#3a8fd4);color:#0c1117;border:none}
+    .product-hero{background:linear-gradient(135deg,var(--teal-dim),var(--blue-dim));border:1px solid var(--border-hi);border-radius:var(--radius);padding:20px;margin-bottom:20px}
+    .product-hero .gtin{font-family:'IBM Plex Mono',monospace;font-size:.72rem;color:var(--teal);font-weight:500;margin-bottom:4px}
+    .product-hero .title{font-size:1rem;font-weight:600;margin-bottom:14px;line-height:1.3}
+    .meta-row{display:flex;gap:10px;flex-wrap:wrap}
+    .meta-chip{display:flex;align-items:center;gap:6px;background:rgba(12,17,23,.5);border:1px solid var(--border);border-radius:8px;padding:7px 12px;font-size:.78rem}
+    .meta-chip .lbl{color:var(--text-dim);font-size:.62rem;font-weight:500;text-transform:uppercase;letter-spacing:.04em}
+    .meta-chip strong{color:var(--text);font-weight:600}
+    .meta-chip.exp strong{color:var(--amber)}
+    .expiry-bar{margin-top:14px;padding:10px 14px;border-radius:10px;font-size:.78rem;font-weight:600;display:flex;align-items:center;gap:8px}
+    .expiry-bar.valid{background:#60b8f012;color:var(--teal);border:1px solid #60b8f020}
+    .expiry-bar.warn{background:#fbbf2412;color:var(--amber);border:1px solid #fbbf2420}
+    .expiry-bar.expired{background:#f8717112;color:var(--red);border:1px solid #f8717120}
+    .section-title{font-size:.66rem;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--text-muted);margin:20px 0 10px}
+    .fields{display:flex;flex-direction:column;gap:6px}
+    .field{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px 14px;display:flex;justify-content:space-between;align-items:baseline;gap:12px}
+    .field-left{flex:1;min-width:0}
+    .field-ai{font-family:'IBM Plex Mono',monospace;font-size:.6rem;color:var(--teal);font-weight:500}
+    .field-label{font-size:.72rem;color:var(--text-dim)}
+    .field-val{font-size:.92rem;font-weight:600;word-break:break-word;text-align:right;font-family:'IBM Plex Mono',monospace}
+    .raw-block{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px;margin-top:6px}
+    .raw-label{font-size:.6rem;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);margin-bottom:6px}
+    .raw-block pre{font-family:'IBM Plex Mono',monospace;font-size:.7rem;color:var(--teal);white-space:pre-wrap;word-break:break-all;line-height:1.6}
+    .badge{display:inline-flex;align-items:center;gap:5px;padding:5px 12px;border-radius:8px;font-size:.72rem;font-weight:600;margin-bottom:16px;background:var(--teal-dim);color:var(--teal);border:1px solid rgba(96,184,240,.15)}
     #capture-canvas{display:none}
     @supports(padding-top:env(safe-area-inset-top)){
-      .header{padding-top:calc(16px + env(safe-area-inset-top))}
-      .results-actions{padding-bottom:calc(16px + env(safe-area-inset-bottom))}
-      .controls{padding-bottom:calc(12px + env(safe-area-inset-bottom))}
+      .header{padding-top:calc(14px + env(safe-area-inset-top))}
+      .results-foot{padding-bottom:calc(14px + env(safe-area-inset-bottom))}
+      .controls{padding-bottom:calc(14px + env(safe-area-inset-bottom))}
     }
   </style>
 </head>
 <body>
 <div class="app">
   <div class="header">
-    <div class="header-icon">
-      <svg viewBox="0 0 24 24" fill="none" stroke="#0a0a0f" stroke-width="2.5" stroke-linecap="round">
-        <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>
-        <rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>
+    <div class="logo">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#0c1117" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M7 3C4.24 3 2 5.69 2 9c0 3.92 3.18 7.29 8.35 11.66a2.5 2.5 0 0 0 3.3 0C18.82 16.29 22 12.92 22 9c0-3.31-2.24-6-5-6a5.07 5.07 0 0 0-3.79 1.89l-.21.25-.21-.25A5.07 5.07 0 0 0 7 3z"/>
       </svg>
     </div>
-    <div><h1>2D-Doc Scanner</h1><small>Lecture &amp; décodage documents sécurisés</small></div>
-    <div class="status-pill loading" id="status-pill"><span class="dot"></span><span id="pill-text">Init…</span></div>
+    <div class="header-text"><h1>VetScan</h1><small>Scanner GS1 DataMatrix</small></div>
+    <div class="pill loading" id="pill"><span class="dot"></span><span id="pill-txt">Init…</span></div>
   </div>
-
-  <div class="camera-container">
+  <div class="camera">
     <video id="video" autoplay playsinline muted></video>
-    <div class="camera-overlay-mask"></div>
-    <div class="scan-zone">
-      <div class="scan-corner tl"></div><div class="scan-corner tr"></div>
-      <div class="scan-corner bl"></div><div class="scan-corner br"></div>
-      <div class="scan-line"></div>
-    </div>
-    <div class="flash" id="flash"></div>
-    <div class="bottom-bar">
-      <div class="format-pills" id="format-pills"></div>
+    <div class="overlay">
+      <div class="vignette"></div>
+      <div class="frame"><div class="frame-border"></div><div class="c tl"></div><div class="c tr"></div><div class="c bl"></div><div class="c br"></div><div class="sweep"></div></div>
+      <div class="flash" id="flash"></div>
+      <div class="hint">Visez le DataMatrix du médicament</div>
     </div>
   </div>
-
   <div class="controls">
-    <button class="btn btn-icon" id="btn-torch">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-        <path d="M9 18h6"/><path d="M10 22h4"/><path d="M12 2v1"/>
-        <path d="m4.9 4.9.7.7"/><path d="M2 12h1"/><path d="m19.1 4.9-.7.7"/><path d="M22 12h-1"/>
-        <path d="M15.5 8a3.5 3.5 0 0 0-7 0c0 2 1.5 3 2 4h3c.5-1 2-2 2-4z"/>
-      </svg>
-    </button>
-    <button class="btn btn-capture" id="btn-capture">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-        <circle cx="12" cy="13" r="4"/>
-        <path d="M9 2 7.2 4H4a1 1 0 0 0-1 1v14a1 1 0 0 0 1 1h16a1 1 0 0 0 1-1V5a1 1 0 0 0-1-1h-3.2L15 2z"/>
-      </svg>
-    </button>
-    <label class="btn btn-icon file-input-wrapper">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-        <polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
-      </svg>
-      <input type="file" accept="image/*" id="file-input">
-    </label>
+    <button class="btn btn-round" id="btn-torch"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 18h6"/><path d="M10 22h4"/><path d="M15.5 8a3.5 3.5 0 0 0-7 0c0 2 1.5 3 2 4h3c.5-1 2-2 2-4z"/></svg></button>
+    <button class="btn btn-scan" id="btn-capture"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><line x1="14" y1="14" x2="21" y2="14"/><line x1="14" y1="17.5" x2="21" y2="17.5"/><line x1="14" y1="21" x2="21" y2="21"/></svg></button>
+    <label class="btn btn-round file-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg><input type="file" accept="image/*" id="file-input"></label>
   </div>
   <canvas id="capture-canvas"></canvas>
 </div>
-
-<div class="results-panel" id="results-panel">
-  <div class="results-header"><h2>Résultat</h2><button class="btn-close" id="btn-close-results">&times;</button></div>
+<div class="results" id="results">
+  <div class="results-head"><h2>Résultat</h2><button class="btn-x" id="btn-close">&times;</button></div>
   <div class="results-body" id="results-body"></div>
-  <div class="results-actions">
-    <button class="btn btn-secondary" id="btn-copy">Copier</button>
-    <button class="btn btn-primary" id="btn-rescan">Nouveau scan</button>
-  </div>
+  <div class="results-foot"><button class="btn btn-ghost" id="btn-copy">Copier</button><button class="btn btn-fill" id="btn-rescan">Nouveau scan</button></div>
 </div>
-
 <script>
-// ═══════════════════════════════════════
-// Global error safety net
-// ═══════════════════════════════════════
-window.onerror = function(m) { setPill('err', 'Erreur'); console.error(m); };
-window.addEventListener('unhandledrejection', function(e) { console.error(e.reason); });
-
-function setPill(type, text) {
-  var p = document.getElementById('status-pill');
-  var t = document.getElementById('pill-text');
-  if (p) { p.className = 'status-pill ' + type; }
-  if (t) { t.textContent = text; }
-}
-
-// ═══════════════════════════════════════
-// MAIN
-// ═══════════════════════════════════════
-(async function() {
-  try {
-  if (document.readyState === 'loading')
-    await new Promise(function(r) { document.addEventListener('DOMContentLoaded', r); });
-
-  var video = document.getElementById('video');
-  var captureCanvas = document.getElementById('capture-canvas');
-  var captureCtx = captureCanvas.getContext('2d', { willReadFrequently: true });
-  var resultsPanel = document.getElementById('results-panel');
-  var resultsBody = document.getElementById('results-body');
-  var flash = document.getElementById('flash');
-  var formatPillsEl = document.getElementById('format-pills');
-
-  var stream = null, detector = null, scanning = false, torchOn = false, lastRaw = '', scanRafId = null;
-  var FORMATS = ['data_matrix', 'qr_code', 'pdf417', 'aztec', 'code_128', 'code_39', 'code_93', 'codabar', 'ean_13', 'ean_8', 'upc_a', 'upc_e', 'itf'];
-  var activeFormats = [];
-
-  // ─── Audio feedback ───
-  var audioCtx = null;
-  function beepSuccess() {
-    try {
-      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-      // Two-tone success beep
-      [860, 1080].forEach(function(freq, i) {
-        var osc = audioCtx.createOscillator();
-        var gain = audioCtx.createGain();
-        osc.type = 'sine';
-        osc.frequency.value = freq;
-        gain.gain.value = 0.15;
-        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.15 + i * 0.1);
-        osc.connect(gain);
-        gain.connect(audioCtx.destination);
-        osc.start(audioCtx.currentTime + i * 0.1);
-        osc.stop(audioCtx.currentTime + 0.15 + i * 0.1);
-      });
-    } catch(e) {}
-  }
-
-  function flashScreen() {
-    flash.classList.add('on');
-    setTimeout(function() { flash.classList.remove('on'); }, 150);
-  }
-
-  function vibrate() { try { navigator.vibrate && navigator.vibrate([80, 40, 80]); } catch(e) {} }
-
-  function feedback() { beepSuccess(); flashScreen(); vibrate(); }
-
-  // ─── STEP 1: Detect engine ───
-  setPill('loading', 'Moteur…');
-
-  var isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-  var useNative = false, usePolyfill = false;
-
-  // Try native BarcodeDetector
-  if ('BarcodeDetector' in window) {
-    try {
-      var supported = await BarcodeDetector.getSupportedFormats();
-      var available = FORMATS.filter(function(f) { return supported.indexOf(f) >= 0; });
-      if (available.length > 0) {
-        detector = new BarcodeDetector({ formats: available });
-        activeFormats = available;
-        useNative = true;
-      }
-    } catch(e) {}
-  }
-
-  // Polyfill for iOS
-  if (!useNative) {
-    setPill('loading', 'WASM…');
-    var cdns = [
-      'https://cdn.jsdelivr.net/npm/barcode-detector@2/dist/es/pure.min.js',
-      'https://unpkg.com/barcode-detector@2/dist/es/pure.min.js',
-      'https://esm.sh/barcode-detector@2?bundle'
-    ];
-
-    for (var ci = 0; ci < cdns.length; ci++) {
-      if (usePolyfill) break;
-      try {
-        var mod = await Promise.race([
-          import(cdns[ci]),
-          new Promise(function(_, rej) { setTimeout(function() { rej(new Error('timeout')); }, 15000); })
-        ]);
-        var Det = mod.BarcodeDetector || (mod.default && mod.default.BarcodeDetector) || mod.default;
-        if (Det && typeof Det === 'function') {
-          var polyfillFormats = [];
-          if (Det.getSupportedFormats) {
-            var pf = await Det.getSupportedFormats();
-            polyfillFormats = FORMATS.filter(function(f) { return pf.indexOf(f) >= 0; });
-          }
-          if (polyfillFormats.length === 0) polyfillFormats = ['data_matrix', 'qr_code'];
-          detector = new Det({ formats: polyfillFormats });
-          activeFormats = polyfillFormats;
-          usePolyfill = true;
-        }
-      } catch(e) {}
-    }
-  }
-
-  // Show format pills
-  activeFormats.forEach(function(f) {
-    var pill = document.createElement('span');
-    pill.className = 'format-pill active';
-    pill.textContent = f.replace('_', ' ').toUpperCase();
-    formatPillsEl.appendChild(pill);
-  });
-
-  if (!useNative && !usePolyfill) {
-    setPill('warn', 'Manuel');
-  }
-
-  // ─── STEP 2: Camera ───
-  setPill('loading', 'Caméra…');
-  try {
-    stream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } },
-      audio: false
-    });
-    video.srcObject = stream;
-    video.play().catch(function() {});
-
-    var att = 0;
-    while (video.videoWidth === 0 && att < 60) { await sleep(100); att++; }
-    captureCanvas.width = video.videoWidth || 1280;
-    captureCanvas.height = video.videoHeight || 720;
-  } catch(e) {
-    setPill('err', 'Caméra ✗');
-  }
-
-  // ─── STEP 3: Go ───
-  if (detector && video.videoWidth > 0) {
-    setPill('ok', (useNative ? 'Natif' : 'WASM') + ' — ' + activeFormats.length + ' formats');
-    startScanning();
-  } else if (video.videoWidth > 0) {
-    setPill('warn', 'Capture seule');
-  } else {
-    setPill('err', 'Init échoué');
-  }
-
-  setupEvents();
-
-  // ═══════════════════════════════════════
-  // SCANNING
-  // ═══════════════════════════════════════
-  function startScanning() {
-    if (scanning || !detector) return;
-    scanning = true;
-    var interval = usePolyfill ? 250 : 40;
-    var lastScan = 0;
-
-    function loop(ts) {
-      if (!scanning) return;
-      if (ts - lastScan < interval) { scanRafId = requestAnimationFrame(loop); return; }
-      lastScan = ts;
-      try {
-        if (video.videoWidth === 0) { scanRafId = requestAnimationFrame(loop); return; }
-        captureCtx.drawImage(video, 0, 0, captureCanvas.width, captureCanvas.height);
-
-        detector.detect(captureCanvas).then(function(r) {
-          if (r && r.length > 0 && r[0].rawValue && r[0].rawValue.length > 5 && scanning) {
-            scanning = false;
-            feedback();
-            handleResult(r[0].rawValue, r[0].format || 'unknown', r[0]);
-          }
-        }).catch(function() {});
-      } catch(e) {}
-      if (scanning) scanRafId = requestAnimationFrame(loop);
-    }
-    scanRafId = requestAnimationFrame(loop);
-  }
-
-  function stopScanning() { scanning = false; if (scanRafId) cancelAnimationFrame(scanRafId); }
-
-  async function manualCapture() {
-    if (video.videoWidth === 0) return;
-    captureCtx.drawImage(video, 0, 0, captureCanvas.width, captureCanvas.height);
-    if (!detector) return;
-
-    var variants = [captureCanvas, enhance(captureCanvas), cropCenter(captureCanvas, 0.55), binarize(captureCanvas), binarize(cropCenter(captureCanvas, 0.55))];
-    for (var i = 0; i < variants.length; i++) {
-      try {
-        var r = await detector.detect(variants[i]);
-        if (r && r.length > 0 && r[0].rawValue && r[0].rawValue.length > 5) {
-          feedback();
-          handleResult(r[0].rawValue, r[0].format || 'unknown', r[0]);
-          return;
-        }
-      } catch(e) {}
-    }
-    // Quick flash red
-    setPill('warn', 'Non détecté');
-    setTimeout(function() { setPill('ok', (useNative ? 'Natif' : 'WASM') + ' — ' + activeFormats.length + ' formats'); }, 2000);
-  }
-
-  async function decodeFromFile(file) {
-    var img = new Image();
-    img.onload = async function() {
-      captureCanvas.width = img.naturalWidth;
-      captureCanvas.height = img.naturalHeight;
-      captureCtx.drawImage(img, 0, 0);
-      if (!detector) return;
-      var variants = [captureCanvas, enhance(captureCanvas), binarize(captureCanvas), cropCenter(captureCanvas, 0.6), binarize(cropCenter(captureCanvas, 0.6))];
-      for (var i = 0; i < variants.length; i++) {
-        try {
-          var r = await detector.detect(variants[i]);
-          if (r && r.length > 0 && r[0].rawValue && r[0].rawValue.length > 5) {
-            feedback();
-            handleResult(r[0].rawValue, r[0].format || 'unknown', r[0]);
-            return;
-          }
-        } catch(e) {}
-      }
-      setPill('warn', 'Non trouvé');
-      setTimeout(function() { setPill('ok', 'Prêt'); }, 2000);
-    };
-    img.src = URL.createObjectURL(file);
-  }
-
-  // Image processing
-  function enhance(src) {
-    var c = document.createElement('canvas'); c.width = src.width; c.height = src.height;
-    var ctx = c.getContext('2d'); ctx.filter = 'contrast(2) grayscale(1) brightness(1.1)'; ctx.drawImage(src, 0, 0); return c;
-  }
-  function cropCenter(src, ratio) {
-    var size = Math.min(src.width, src.height) * ratio;
-    var x = (src.width - size) / 2, y = (src.height - size) / 2;
-    var c = document.createElement('canvas'); c.width = size; c.height = size;
-    c.getContext('2d').drawImage(src, x, y, size, size, 0, 0, size, size); return c;
-  }
-  function binarize(src) {
-    var c = document.createElement('canvas'); c.width = src.width; c.height = src.height;
-    var ctx = c.getContext('2d', { willReadFrequently: true });
-    ctx.filter = 'contrast(3) grayscale(1) brightness(1.2)'; ctx.drawImage(src, 0, 0); ctx.filter = 'none';
-    var id = ctx.getImageData(0, 0, c.width, c.height), d = id.data;
-    for (var i = 0; i < d.length; i += 4) { var g = d[i]*.299+d[i+1]*.587+d[i+2]*.114; d[i]=d[i+1]=d[i+2]= g>128?255:0; }
-    ctx.putImageData(id, 0, 0); return c;
-  }
-  function sleep(ms) { return new Promise(function(r) { setTimeout(r, ms); }); }
-
-  // ═══════════════════════════════════════
-  // RESULT HANDLING
-  // ═══════════════════════════════════════
-  async function handleResult(raw, format, detectedBarcode) {
-    lastRaw = raw;
-    stopScanning();
-
-    var rawBytes = null;
-    if (detectedBarcode) {
-      if (detectedBarcode.rawBytes) rawBytes = detectedBarcode.rawBytes;
-      else if (detectedBarcode.rawData) rawBytes = new Uint8Array(detectedBarcode.rawData);
-    }
-
-    // Smart detection: GS1 DataMatrix, 2D-Doc, or plain barcode
-    var result = { type: 'plain', raw: raw, format: format };
-
-    if (isGS1(raw)) {
-      result = { type: 'gs1', data: parseGS1(raw), raw: raw, format: format };
-    } else {
-      var parsed = parse2DDoc(raw, rawBytes);
-      if (parsed.isValid && parsed.fields.length > 0) {
-        var sigResult = null;
-        if (parsed.signature && parsed.messageToVerify) {
-          sigResult = await verifySignature(parsed);
-        }
-        result = { type: '2ddoc', data: parsed, sig: sigResult, raw: raw, format: format };
-      }
-    }
-
-    renderResults(result);
-    resultsPanel.classList.add('open');
-  }
-
-  // ═══════════════════════════════════════
-  // GS1 DATAMATRIX PARSER
-  // ═══════════════════════════════════════
-  function isGS1(raw) {
-    // GS1 DataMatrix starts with ]d2 or FNC1 (0xE8/232) or GS (0x1D/29)
-    if (raw.indexOf(']d2') === 0 || raw.indexOf(']Q3') === 0 || raw.indexOf(']C1') === 0) return true;
-    var c0 = raw.charCodeAt(0);
-    if (c0 === 232 || c0 === 0x1D || c0 === 0x1E || c0 === 0x1F) {
-      // Check if after the control char it looks like GS1
-      var after = raw.substring(1);
-      if (/^01\d{14}/.test(after)) return true;
-      if (/^\d{2}/.test(after)) return true; // Starts with any AI
-    }
-    // Direct AI patterns
-    if (/^01\d{14}/.test(raw)) return true;
-    if (/^\(01\)/.test(raw)) return true;
-    return false;
-  }
-
-  function parseGS1(raw) {
-    var res = { fields: [], diag: {} };
-    var data = raw;
-
-    // Strip symbology identifier
-    if (data.indexOf(']d2') === 0 || data.indexOf(']Q3') === 0 || data.indexOf(']C1') === 0) {
-      data = data.substring(3);
-    }
-    // Strip leading FNC1 or GS or control chars
-    while (data.length > 0 && (data.charCodeAt(0) <= 0x1F || data.charCodeAt(0) === 232)) {
-      data = data.substring(1);
-    }
-
-    // Strip parentheses format: (01)12345 → 0112345
-    data = data.replace(/\((\d{2,4})\)/g, '$1');
-
-    res.diag.cleaned = data.substring(0, 40) + '…';
-
-    var pos = 0;
-    var maxIter = 50;
-
-    while (pos < data.length && maxIter-- > 0) {
-      // Skip GS separators
-      if (data.charCodeAt(pos) === 0x1D || data.charCodeAt(pos) <= 0x1F) { pos++; continue; }
-
-      var matched = false;
-
-      // Try each known AI
-      for (var ai = 0; ai < GS1_AIS.length; ai++) {
-        var def = GS1_AIS[ai];
-        var code = def[0];
-        if (data.substring(pos, pos + code.length) !== code) continue;
-
-        pos += code.length;
-        var val = '';
-
-        if (def[2] > 0) {
-          // Fixed length
-          val = data.substring(pos, pos + def[2]);
-          pos += def[2];
-        } else {
-          // Variable length — read until GS (0x1D) or end
-          var end = data.length;
-          for (var vi = pos; vi < data.length; vi++) {
-            if (data.charCodeAt(vi) === 0x1D || data.charCodeAt(vi) <= 0x1F) { end = vi; break; }
-          }
-          val = data.substring(pos, end);
-          pos = end;
-        }
-
-        res.fields.push({ ai: code, label: def[1], value: formatGS1Value(code, val), rawValue: val });
-        matched = true;
-        break;
-      }
-
-      if (!matched) {
-        // Unknown AI, try to skip gracefully
-        // Collect remaining as unknown
-        var remainder = data.substring(pos);
-        if (remainder.length > 0) {
-          res.fields.push({ ai: '??', label: 'Données non parsées', value: remainder, rawValue: remainder });
-        }
-        break;
-      }
-    }
-
-    return res;
-  }
-
-  function formatGS1Value(ai, val) {
-    // Format expiry date YYMMDD
-    if (ai === '17' && val.length === 6) {
-      return val.substring(4, 6) + '/' + val.substring(2, 4) + '/20' + val.substring(0, 2);
-    }
-    // Format production date
-    if (ai === '11' && val.length === 6) {
-      return val.substring(4, 6) + '/' + val.substring(2, 4) + '/20' + val.substring(0, 2);
-    }
-    // Format weight (last digit = decimal places)
-    if (/^31[0-9]{2}$/.test(ai)) {
-      var dec = parseInt(ai[3], 10);
-      var num = parseInt(val, 10);
-      return (num / Math.pow(10, dec)).toFixed(dec) + ' kg';
-    }
-    return val;
-  }
-
-  // GS1 Application Identifiers: [code, label, fixedLength (0=variable)]
-  var GS1_AIS = [
-    ['00', 'SSCC', 18],
-    ['01', 'GTIN', 14],
-    ['02', 'GTIN contenu', 14],
-    ['10', 'N° Lot', 0],
-    ['11', 'Date production', 6],
-    ['13', 'Date emballage', 6],
-    ['15', 'Date util. optimale', 6],
-    ['17', 'Date expiration', 6],
-    ['20', 'Variante produit', 2],
-    ['21', 'N° Série', 0],
-    ['22', 'Données secondaires', 0],
-    ['235', 'Extension TPX', 0],
-    ['240', 'Identification complémentaire', 0],
-    ['241', 'N° Client', 0],
-    ['242', 'Made-to-Order variation', 0],
-    ['250', 'N° Série secondaire', 0],
-    ['251', 'Réf. source', 0],
-    ['253', 'Identifiant global document', 0],
-    ['30', 'Quantité', 0],
-    ['310', 'Poids net (kg)', 6],
-    ['3100','Poids net (kg)', 6],
-    ['3101','Poids net (kg) x0.1', 6],
-    ['3102','Poids net (kg) x0.01', 6],
-    ['3103','Poids net (kg) x0.001', 6],
-    ['320', 'Poids net (lb)', 6],
-    ['37', 'Nombre d\'unités', 0],
-    ['400', 'N° Commande', 0],
-    ['410', 'Ship to GLN', 13],
-    ['411', 'Bill to GLN', 13],
-    ['412', 'Purchase from GLN', 13],
-    ['414', 'GLN lieu physique', 13],
-    ['415', 'GLN factureur', 13],
-    ['421', 'Code postal ship-to', 0],
-    ['422', 'Pays d\'origine', 3],
-    ['7003', 'Date/heure expiration', 10],
-    ['710', 'NHRN Allemagne', 0],
-    ['711', 'NHRN France (CIP)', 0],
-    ['712', 'NHRN Espagne', 0],
-    ['713', 'NHRN Brésil', 0],
-    ['714', 'NHRN Portugal', 0],
-    ['91', 'Info interne', 0],
-    ['92', 'Info interne', 0],
-    ['93', 'Info interne', 0],
-    ['94', 'Info interne', 0],
-    ['95', 'Info interne', 0],
-  ];
-  // Sort by code length DESC so longer codes match first (e.g. 3103 before 310)
-  GS1_AIS.sort(function(a, b) { return b[0].length - a[0].length || a[0].localeCompare(b[0]); });
-
-  // ═══════════════════════════════════════
-  // 2D-DOC PARSER (ANTS spec) — robust
-  // ═══════════════════════════════════════
-  function parse2DDoc(raw, rawBytes) {
-    var res = { isValid: false, header: {}, fields: [], signature: null, messageToVerify: null, raw: raw, diag: {} };
-
-    // If we have rawBytes, try to use them for better control char preservation
-    var workStr = raw;
-    if (rawBytes && rawBytes.length > 0) {
-      // Decode as ISO-8859-1 to preserve all byte values including control chars
-      try {
-        workStr = new TextDecoder('iso-8859-1').decode(rawBytes);
-        res.diag.source = 'rawBytes (ISO-8859-1)';
-      } catch(e) {
-        res.diag.source = 'rawValue (fallback)';
-      }
-    } else {
-      res.diag.source = 'rawValue';
-    }
-
-    // Diagnostic: count control chars
-    var ctrlCount = 0;
-    for (var ci = 0; ci < workStr.length; ci++) {
-      var cc = workStr.charCodeAt(ci);
-      if (cc === 0x1D || cc === 0x1E || cc === 0x1F) ctrlCount++;
-    }
-    res.diag.controlChars = ctrlCount;
-    res.diag.length = workStr.length;
-
-    try {
-      var pos = 0;
-
-      // ── Find DC marker ──
-      var hStart = -1;
-      for (var i = 0; i < Math.min(10, workStr.length - 1); i++) {
-        if (workStr[i] === 'D' && workStr[i+1] === 'C') { hStart = i; break; }
-      }
-
-      if (hStart >= 0) {
-        pos = hStart + 2;
-        res.header.marker = 'DC';
-        res.isValid = true;
-      } else if (/^0[1-4]/.test(workStr)) {
-        // Version without DC prefix (some old encoders)
-        res.isValid = true;
-      }
-
-      if (!res.isValid) {
-        // Not a 2D-Doc, return minimal parse
-        return res;
-      }
-
-      // ── Parse header ──
-      res.header.version = workStr.substring(pos, pos + 2); pos += 2;
-      var ver = parseInt(res.header.version, 10);
-      res.diag.version = ver;
-
-      if (ver >= 1 && ver <= 4) {
-        res.header.caId = workStr.substring(pos, pos + 4); pos += 4;
-        res.header.certId = workStr.substring(pos, pos + 4); pos += 4;
-        res.header.emissionDate = hexDate(workStr.substring(pos, pos + 4)); pos += 4;
-        res.header.signatureDate = hexDate(workStr.substring(pos, pos + 4)); pos += 4;
-        res.header.docTypeId = workStr.substring(pos, pos + 2); pos += 2;
-
-        // v3/v4 have additional perimeter ID
-        if (ver >= 3) {
-          res.header.perimeterId = workStr.substring(pos, pos + 2); pos += 2;
-        }
-      }
-
-      var rest = workStr.substring(pos);
-
-      // ── Find signature ──
-      // Signature is after the LAST GS (0x1D) or RS (0x1E) separator
-      // and should be >= 64 chars for ECDSA P-256
-      var sigIdx = -1;
-      for (var j = rest.length - 1; j >= 0; j--) {
-        var ch = rest.charCodeAt(j);
-        if (ch === 0x1E || ch === 0x1D || ch === 0x1F) {
-          var remaining = rest.length - j - 1;
-          if (remaining >= 40) { sigIdx = j; break; }
-        }
-      }
-
-      // Also try to find signature by looking for long hex-only suffix (no separators case)
-      if (sigIdx < 0) {
-        var hexMatch = rest.match(/([0-9A-Fa-f]{64,})$/);
-        if (hexMatch) {
-          sigIdx = rest.length - hexMatch[1].length - 1;
-          res.diag.sigDetection = 'hex-suffix';
-        }
-      }
-
-      var msg = sigIdx >= 0 ? rest.substring(0, sigIdx) : rest;
-      if (sigIdx >= 0) {
-        var sepChar = rest.charCodeAt(sigIdx);
-        res.signature = rest.substring(sigIdx + (sepChar <= 0x1F ? 1 : 0));
-        res.messageToVerify = workStr.substring(0, pos + sigIdx);
-        res.diag.sigLength = res.signature.length;
-      }
-
-      // ── Parse fields ──
-      if (ctrlCount > 0) {
-        // Normal parsing with control characters
-        var parts = msg.split(/[\x1D\x1E\x1F]/);
-        for (var k = 0; k < parts.length; k++) {
-          var p = parts[k];
-          if (p.length < 3) continue;
-          var tag = p.substring(0, 2).toUpperCase();
-          var val = p.substring(2);
-          res.fields.push({ tag: tag, label: TAGS[tag] ? TAGS[tag].label : 'Champ ' + tag, value: val });
-        }
-        res.diag.parseMethod = 'control-chars (' + ctrlCount + ' sép.)';
-      } else {
-        // No control chars — try tag-by-tag scanning
-        res.diag.parseMethod = 'tag-scanning (pas de sép.)';
-        parseFieldsByTags(msg, res.fields);
-      }
-
-    } catch(e) {
-      res.parseError = e.message;
-    }
-    return res;
-  }
-
-  // Parse fields when control characters are missing
-  // Uses known tag patterns and field length conventions
-  function parseFieldsByTags(msg, fields) {
-    if (!msg || msg.length < 3) return;
-
-    // Known field length patterns per doc type
-    // For variable-length fields, we scan until next known tag
-    var allTags = Object.keys(TAGS);
-    var pos = 0;
-    var maxIter = 100; // safety
-
-    while (pos < msg.length - 2 && maxIter-- > 0) {
-      var tag = msg.substring(pos, pos + 2).toUpperCase();
-
-      // Check if this looks like a valid tag
-      if (TAGS[tag]) {
-        pos += 2;
-        // Find the end: look for the next valid tag
-        var end = msg.length;
-        for (var scan = pos + 1; scan < msg.length - 1; scan++) {
-          var nextTag = msg.substring(scan, scan + 2).toUpperCase();
-          if (TAGS[nextTag]) {
-            end = scan;
-            break;
-          }
-          // Also stop at control chars just in case
-          if (msg.charCodeAt(scan) <= 0x1F) {
-            end = scan;
-            break;
-          }
-        }
-        var val = msg.substring(pos, end);
-        if (val.length > 0) {
-          fields.push({ tag: tag, label: TAGS[tag].label, value: val });
-        }
-        pos = end;
-      } else {
-        // Unknown tag, try advancing one char
-        pos++;
-      }
-    }
-
-    // If no fields found with tag scanning, show the whole message as a single field
-    if (fields.length === 0 && msg.length > 0) {
-      fields.push({ tag: '??', label: 'Données brutes (non parsées)', value: msg });
-    }
-  }
-
-  function hexDate(hex) {
-    var d = parseInt(hex, 16);
-    if (isNaN(d) || d > 36500) return hex;
-    return new Date(2000, 0, 1 + d).toLocaleDateString('fr-FR');
-  }
-
-  // ═══════════════════════════════════════
-  // SIGNATURE VERIFICATION (ECDSA P-256)
-  // ═══════════════════════════════════════
-  // Known ANTS CA public keys (source: https://ants.gouv.fr/2D-Doc)
-  var KNOWN_KEYS = {
-    // Format: "caId+certId" -> { x, y } (Base64url-encoded P-256 coordinates)
-    // FR00 - ANTS production keys
-    'FR000001': {
-      x: 'f0yGRT4rOaIxjBN08mEUfb4Kry1rS6VBnxRoNJfl0Xo',
-      y: 'b9Y_2nU-mSIyrNV1JhSAMQNMDfnJb9XWYn4aqw1p3kI',
-      curve: 'P-256'
-    },
-    // Additional keys can be added as they are published
-  };
-
-  async function verifySignature(parsed) {
-    // Check if Web Crypto is available
-    if (!window.crypto || !window.crypto.subtle) {
-      return { status: 'unsupported', message: 'Web Crypto non disponible' };
-    }
-
-    var caId = parsed.header.caId || '';
-    var certId = parsed.header.certId || '';
-    var keyId = caId + certId;
-
-    // Check if we have the public key
-    var keyData = KNOWN_KEYS[keyId];
-    if (!keyData) {
-      return { status: 'unknown', message: 'Clé CA inconnue: ' + keyId };
-    }
-
-    try {
-      // Import the public key
-      var publicKey = await crypto.subtle.importKey(
-        'jwk',
-        {
-          kty: 'EC',
-          crv: keyData.curve || 'P-256',
-          x: keyData.x,
-          y: keyData.y
-        },
-        { name: 'ECDSA', namedCurve: keyData.curve || 'P-256' },
-        false,
-        ['verify']
-      );
-
-      // Prepare the message (UTF-8 encoded)
-      var msgBytes = new TextEncoder().encode(parsed.messageToVerify);
-
-      // Decode signature from hex or raw
-      var sigBytes;
-      var sigStr = parsed.signature;
-      if (/^[0-9a-fA-F]+$/.test(sigStr)) {
-        // Hex-encoded signature
-        sigBytes = hexToBytes(sigStr);
-      } else {
-        // Raw binary signature
-        sigBytes = new Uint8Array(sigStr.length);
-        for (var i = 0; i < sigStr.length; i++) {
-          sigBytes[i] = sigStr.charCodeAt(i);
-        }
-      }
-
-      // 2D-Doc uses DER-encoded ECDSA signatures — convert to raw r||s for Web Crypto
-      var rawSig = derToRaw(sigBytes);
-      if (!rawSig) {
-        return { status: 'invalid', message: 'Format signature invalide (DER)' };
-      }
-
-      // Verify
-      var valid = await crypto.subtle.verify(
-        { name: 'ECDSA', hash: 'SHA-256' },
-        publicKey,
-        rawSig,
-        msgBytes
-      );
-
-      return {
-        status: valid ? 'verified' : 'invalid',
-        message: valid ? 'Signature ECDSA valide ✓' : 'Signature invalide ✗',
-        keyId: keyId
-      };
-    } catch(e) {
-      return { status: 'error', message: 'Erreur vérif: ' + e.message };
-    }
-  }
-
-  function hexToBytes(hex) {
-    var bytes = new Uint8Array(hex.length / 2);
-    for (var i = 0; i < hex.length; i += 2) {
-      bytes[i / 2] = parseInt(hex.substring(i, i + 2), 16);
-    }
-    return bytes;
-  }
-
-  // Convert DER-encoded ECDSA signature to raw r||s (64 bytes for P-256)
-  function derToRaw(der) {
-    try {
-      if (!(der instanceof Uint8Array)) return null;
-      // Already raw 64-byte format?
-      if (der.length === 64) return der;
-
-      var offset = 0;
-      if (der[offset] !== 0x30) return null; // SEQUENCE
-      offset++;
-      var seqLen = der[offset]; offset++;
-      if (seqLen & 0x80) { offset += (seqLen & 0x7F); } // skip long form length
-
-      // Read r
-      if (der[offset] !== 0x02) return null; // INTEGER
-      offset++;
-      var rLen = der[offset]; offset++;
-      var r = der.slice(offset, offset + rLen);
-      offset += rLen;
-
-      // Read s
-      if (der[offset] !== 0x02) return null;
-      offset++;
-      var sLen = der[offset]; offset++;
-      var s = der.slice(offset, offset + sLen);
-
-      // Pad/trim to 32 bytes each
-      var rPad = padTo32(r);
-      var sPad = padTo32(s);
-
-      var raw = new Uint8Array(64);
-      raw.set(rPad, 0);
-      raw.set(sPad, 32);
-      return raw;
-    } catch(e) {
-      return null;
-    }
-  }
-
-  function padTo32(buf) {
-    // Remove leading zeros
-    var start = 0;
-    while (start < buf.length && buf[start] === 0) start++;
-    var trimmed = buf.slice(start);
-    if (trimmed.length > 32) trimmed = trimmed.slice(trimmed.length - 32);
-    if (trimmed.length === 32) return trimmed;
-    var padded = new Uint8Array(32);
-    padded.set(trimmed, 32 - trimmed.length);
-    return padded;
-  }
-
-  // ═══════════════════════════════════════
-  // 2D-DOC FIELD TAGS
-  // ═══════════════════════════════════════
-  var TAGS = {
-    '01':{label:'Ligne identité 1'},'02':{label:'Ligne identité 2'},'03':{label:'Ligne identité 3'},
-    '04':{label:'Ligne identité 4'},'05':{label:'Ligne identité 5'},
-    '06':{label:'Point de remise'},'07':{label:'Code postal'},'08':{label:'Ville'},'09':{label:'Pays'},
-    '0A':{label:'Téléphone'},'0B':{label:'Email'},
-    '10':{label:'Adresse L1'},'11':{label:'Adresse L2'},'12':{label:'Adresse L3'},'13':{label:'Adresse L4'},
-    '14':{label:'Adresse L5'},'15':{label:'Adresse L6'},'16':{label:'Adresse L7'},
-    '17':{label:'Qualité/Titre'},'18':{label:'Prénom(s)'},'19':{label:'Nom'},
-    '1A':{label:'Complément nom'},'1B':{label:'Date naissance'},'1C':{label:'Lieu naissance'},
-    '1D':{label:'Sexe'},'1E':{label:'Nationalité'},
-    '20':{label:'Identifiant RH'},'21':{label:'N° Sécu (NIR)'},
-    '22':{label:'Période début'},'23':{label:'Période fin'},'24':{label:'Date paiement'},
-    '25':{label:'Net fiscal'},'26':{label:'Net à payer'},'27':{label:'Cumul net imposable'},
-    '28':{label:'Heures travaillées'},'29':{label:'SIRET employeur'},'2A':{label:'Raison sociale'},
-    '30':{label:'N° facture'},'31':{label:'N° client'},'32':{label:'N° contrat'},
-    '33':{label:'Point de service'},'34':{label:'Montant TTC'},'35':{label:'Date facture'},
-    '36':{label:'Date limite paiement'},'37':{label:'SIREN fournisseur'},'38':{label:'Nom fournisseur'},
-    '39':{label:'Type énergie'},'3A':{label:'Période début fact.'},'3B':{label:'Période fin fact.'},
-    '40':{label:'Revenu fiscal réf.'},'41':{label:'Nbre parts'},'42':{label:'Année revenus'},
-    '43':{label:'N° fiscal'},'44':{label:'Réf. avis'},'45':{label:'Montant impôt'},
-    '46':{label:'Situation famille'},'47':{label:'Pers. à charge'},
-    '50':{label:'Immatriculation'},'51':{label:'Date immat.'},'52':{label:'Titulaire'},
-    '53':{label:'Marque'},'54':{label:'Modèle'},'55':{label:'N° VIN'}
-  };
-
-  var DOC_TYPES = {
-    '00':'Justificatif de domicile','01':'Justificatif de domicile','02':'Facture',
-    '03':'Avis d\'imposition','04':'Titre d\'identité','05':'Carte grise',
-    '06':'Diplôme','07':'Carte Vitale','08':'RIB','09':'Bulletin de salaire',
-    '10':'Contrat de travail','11':'Attestation employeur'
-  };
-
-  // ═══════════════════════════════════════
-  // RENDER
-  // ═══════════════════════════════════════
-  function renderResults(result) {
-    var raw = result.raw;
-    var format = result.format;
-    var fmtLabel = (format || 'unknown').replace(/_/g, ' ').toUpperCase();
-    var h = '';
-
-    if (result.type === 'gs1') {
-      // ── GS1 DataMatrix ──
-      var gs1 = result.data;
-      h += '<div class="result-badge success">📦 GS1 DataMatrix</div>';
-
-      // Highlight key fields at top
-      var gtin = gs1.fields.find(function(f) { return f.ai === '01'; });
-      var lot = gs1.fields.find(function(f) { return f.ai === '10'; });
-      var exp = gs1.fields.find(function(f) { return f.ai === '17'; });
-      var serial = gs1.fields.find(function(f) { return f.ai === '21'; });
-
-      if (gtin || exp) {
-        h += '<div class="field-card" style="margin-bottom:16px;border-color:var(--accent)">';
-        if (gtin) h += '<div class="field-value" style="font-size:1.1rem;margin-bottom:8px">GTIN: ' + esc(gtin.value) + '</div>';
-        if (lot) h += '<div class="field-label" style="font-size:.88rem;color:var(--text)">Lot: <strong>' + esc(lot.value) + '</strong></div>';
-        if (exp) h += '<div class="field-label" style="font-size:.88rem;color:var(--text)">Expiration: <strong>' + esc(exp.value) + '</strong></div>';
-        if (serial) h += '<div class="field-label" style="font-size:.88rem;color:var(--text)">Série: <strong>' + esc(serial.value) + '</strong></div>';
-        h += '</div>';
-      }
-
-      // All fields
-      h += '<div class="fields-grid">';
-      for (var i = 0; i < gs1.fields.length; i++) {
-        var f = gs1.fields[i];
-        h += '<div class="field-card"><div class="field-tag">AI (' + esc(f.ai) + ')</div>';
-        h += '<div class="field-label">' + esc(f.label) + '</div>';
-        h += '<div class="field-value">' + esc(f.value) + '</div></div>';
-      }
-      h += '</div>';
-
-    } else if (result.type === '2ddoc') {
-      // ── 2D-Doc ANTS ──
-      var p = result.data;
-      var sig = result.sig;
-
-      h += '<div class="result-badge success">✓ 2D-Doc — ' + fmtLabel + '</div>';
-
-      if (sig) {
-        var cls = sig.status === 'verified' ? 'verified' : sig.status === 'invalid' ? 'invalid' : 'unknown';
-        var icon = sig.status === 'verified' ? '🔒' : sig.status === 'invalid' ? '🔓' : '🔑';
-        h += '<div class="sig-badge ' + cls + '">' + icon + ' ' + esc(sig.message) + '</div>';
-      }
-
-      if (p.header.version) {
-        var hd = p.header;
-        h += '<div class="field-card" style="margin-bottom:16px">';
-        h += '<div class="field-tag">EN-TÊTE 2D-DOC</div>';
-        h += '<div class="field-label">Version ' + hd.version + ' ' + (hd.marker || '') + '</div>';
-        if (hd.caId) h += '<div class="field-label">CA: ' + esc(hd.caId) + ' — Certificat: ' + esc(hd.certId) + '</div>';
-        if (hd.emissionDate) h += '<div class="field-label">Émission: ' + esc(hd.emissionDate) + ' — Signature: ' + esc(hd.signatureDate) + '</div>';
-        if (hd.perimeterId) h += '<div class="field-label">Périmètre: ' + esc(hd.perimeterId) + '</div>';
-        if (hd.docTypeId) h += '<div class="field-value" style="margin-top:6px">' + esc(DOC_TYPES[hd.docTypeId] || 'Type ' + hd.docTypeId) + '</div>';
-        h += '</div>';
-      }
-
-      if (p.fields.length > 0) {
-        h += '<div class="fields-grid">';
-        for (var j = 0; j < p.fields.length; j++) {
-          var ff = p.fields[j];
-          var v = ff.value;
-          if (/montant|net|impôt|revenu/i.test(ff.label)) {
-            var n = parseInt(v, 10);
-            if (!isNaN(n) && n > 0) v = (n / 100).toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' });
-          }
-          if (/date/i.test(ff.label) && /^\d{8}$/.test(v)) {
-            v = v.substring(0, 2) + '/' + v.substring(2, 4) + '/' + v.substring(4);
-          }
-          h += '<div class="field-card"><div class="field-tag">' + esc(ff.tag) + '</div>';
-          h += '<div class="field-label">' + esc(ff.label) + '</div>';
-          h += '<div class="field-value">' + esc(v) + '</div></div>';
-        }
-        h += '</div>';
-      }
-
-      if (p.signature) {
-        h += '<div class="raw-data" style="margin-top:16px"><div class="raw-data-label">Signature (' + p.signature.length + ' car.)</div>';
-        h += '<pre style="color:var(--warning)">' + esc(p.signature.substring(0, 120));
-        if (p.signature.length > 120) h += '…';
-        h += '</pre></div>';
-      }
-
-      // Diagnostic
-      if (p.diag) {
-        h += '<details style="margin-top:16px"><summary style="font-size:.7rem;color:var(--text-dim);cursor:pointer">Diagnostic technique</summary>';
-        h += '<div class="raw-data" style="margin-top:8px"><pre style="color:var(--text-dim);font-size:.7rem">';
-        h += 'Source: ' + (p.diag.source || '?') + '\n';
-        h += 'Séparateurs: ' + (p.diag.controlChars || 0) + '\n';
-        h += 'Parsing: ' + (p.diag.parseMethod || '?') + '\n';
-        h += 'Champs: ' + p.fields.length + '\n';
-        h += '\nHex (30 premiers):\n';
-        for (var hi = 0; hi < Math.min(30, raw.length); hi++) {
-          h += raw.charCodeAt(hi).toString(16).padStart(2, '0') + ' ';
-          if ((hi + 1) % 16 === 0) h += '\n';
-        }
-        h += '</pre></div></details>';
-      }
-
-    } else {
-      // ── Plain barcode ──
-      h += '<div class="result-badge warning">' + fmtLabel + '</div>';
-      h += '<div class="field-card" style="margin-top:12px">';
-      h += '<div class="field-tag">' + fmtLabel + '</div>';
-      h += '<div class="field-label">Valeur décodée</div>';
-      h += '<div class="field-value" style="font-size:1.2rem;letter-spacing:.02em">' + esc(raw) + '</div>';
-      h += '</div>';
-
-      // For EAN/UPC, show product lookup hint
-      if (/^(ean|upc)/i.test(format)) {
-        h += '<div style="margin-top:12px;font-size:.78rem;color:var(--text-dim)">Astuce : recherchez ce code sur Open Food Facts ou un moteur de recherche pour identifier le produit.</div>';
-      }
-    }
-
-    // Raw data (always shown)
-    h += '<div class="raw-data" style="margin-top:20px">';
-    h += '<div class="raw-data-label">Données brutes — ' + raw.length + ' car.</div>';
-    h += '<pre>' + esc(fmtRaw(raw)) + '</pre></div>';
-
-    resultsBody.innerHTML = h;
-  }
-
-  function esc(s) { return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
-  function fmtRaw(s) {
-    return s.replace(/[\x00-\x1F]/g, function(c) {
-      var n = c.charCodeAt(0);
-      var names = { 0x1D: '⟨GS⟩', 0x1E: '⟨RS⟩', 0x1F: '⟨US⟩', 0x04: '⟨EOT⟩' };
-      return names[n] || '⟨' + n.toString(16).padStart(2, '0') + '⟩';
-    });
-  }
-
-  // ═══════════════════════════════════════
-  // UI
-  // ═══════════════════════════════════════
-  function setupEvents() {
-    document.getElementById('btn-torch').addEventListener('click', async function() {
-      if (!stream) return;
-      var track = stream.getVideoTracks()[0];
-      var caps = track.getCapabilities ? track.getCapabilities() : {};
-      if (!caps.torch) return;
-      torchOn = !torchOn;
-      await track.applyConstraints({ advanced: [{ torch: torchOn }] });
-      this.classList.toggle('active', torchOn);
-    });
-
-    document.getElementById('btn-capture').addEventListener('click', manualCapture);
-
-    document.getElementById('file-input').addEventListener('change', function(e) {
-      if (e.target.files && e.target.files[0]) decodeFromFile(e.target.files[0]);
-      e.target.value = '';
-    });
-
-    document.getElementById('btn-close-results').addEventListener('click', closeResults);
-    document.getElementById('btn-rescan').addEventListener('click', closeResults);
-
-    document.getElementById('btn-copy').addEventListener('click', function() {
-      navigator.clipboard.writeText(lastRaw).then(function() {
-        var btn = document.getElementById('btn-copy');
-        btn.textContent = 'Copié ✓';
-        setTimeout(function() { btn.textContent = 'Copier'; }, 1500);
-      });
-    });
-  }
-
-  function closeResults() {
-    resultsPanel.classList.remove('open');
-    if (video.videoWidth > 0) {
-      captureCanvas.width = video.videoWidth;
-      captureCanvas.height = video.videoHeight;
-    }
-    setTimeout(startScanning, 300);
-  }
-
-  } catch(fatal) {
-    setPill('err', 'Crash');
-    console.error('[FATAL]', fatal);
-  }
-})();
-
-// Service Worker — force refresh
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.getRegistrations().then(function(regs) {
-    regs.forEach(function(r) { r.unregister(); });
-    setTimeout(function() { navigator.serviceWorker.register('sw.js').catch(function(){}); }, 500);
-  });
-}
+window.onerror=function(){setPill('err','Erreur')};
+function setPill(t,x){var p=document.getElementById('pill'),s=document.getElementById('pill-txt');if(p)p.className='pill '+t;if(s)s.textContent=x}
+(async function(){try{
+if(document.readyState==='loading')await new Promise(function(r){document.addEventListener('DOMContentLoaded',r)});
+var video=document.getElementById('video'),canvas=document.getElementById('capture-canvas'),ctx=canvas.getContext('2d',{willReadFrequently:true}),results=document.getElementById('results'),body=document.getElementById('results-body'),flash=document.getElementById('flash');
+var stream=null,det=null,scanning=false,torchOn=false,lastRaw='',raf=null,useNative=false,usePoly=false;
+var audioCtx=null;
+function beep(){try{if(!audioCtx)audioCtx=new(window.AudioContext||window.webkitAudioContext);[780,1040].forEach(function(f,i){var o=audioCtx.createOscillator(),g=audioCtx.createGain();o.type='sine';o.frequency.value=f;g.gain.value=.12;g.gain.exponentialRampToValueAtTime(.001,audioCtx.currentTime+.14+i*.09);o.connect(g);g.connect(audioCtx.destination);o.start(audioCtx.currentTime+i*.09);o.stop(audioCtx.currentTime+.14+i*.09)})}catch(e){}}
+function fb(){beep();flash.classList.add('on');setTimeout(function(){flash.classList.remove('on')},140);try{navigator.vibrate&&navigator.vibrate([60,30,60])}catch(e){}}
+function sl(ms){return new Promise(function(r){setTimeout(r,ms)})}
+// Engine
+setPill('loading','Moteur…');
+if('BarcodeDetector' in window){try{var f=await BarcodeDetector.getSupportedFormats();if(f.indexOf('data_matrix')>=0){det=new BarcodeDetector({formats:['data_matrix']});useNative=true}}catch(e){}}
+if(!useNative){setPill('loading','WASM…');var urls=['https://cdn.jsdelivr.net/npm/barcode-detector@2/dist/es/pure.min.js','https://unpkg.com/barcode-detector@2/dist/es/pure.min.js','https://esm.sh/barcode-detector@2?bundle'];
+for(var ci=0;ci<urls.length;ci++){if(usePoly)break;try{var m=await Promise.race([import(urls[ci]),new Promise(function(_,j){setTimeout(function(){j(new Error('t'))},15000)})]);var D=m.BarcodeDetector||(m.default&&m.default.BarcodeDetector)||m.default;if(D&&typeof D==='function'){det=new D({formats:['data_matrix']});usePoly=true}}catch(e){}}}
+// Camera
+setPill('loading','Caméra…');
+try{stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment',width:{ideal:1280},height:{ideal:720}},audio:false});video.srcObject=stream;video.play().catch(function(){});var a=0;while(video.videoWidth===0&&a<60){await sl(100);a++}canvas.width=video.videoWidth||1280;canvas.height=video.videoHeight||720}catch(e){setPill('err','Caméra ✗')}
+if(det&&video.videoWidth>0){setPill('ok',(useNative?'Natif':'WASM')+' ✓');startScan()}else if(!det){setPill('err','Décodeur ✗')}else{setPill('err','Vidéo ✗')}
+// Events
+document.getElementById('btn-torch').addEventListener('click',async function(){if(!stream)return;var t=stream.getVideoTracks()[0],c=t.getCapabilities?t.getCapabilities():{};if(!c.torch)return;torchOn=!torchOn;await t.applyConstraints({advanced:[{torch:torchOn}]});this.classList.toggle('active',torchOn)});
+document.getElementById('btn-capture').addEventListener('click',manual);
+document.getElementById('file-input').addEventListener('change',function(e){if(e.target.files&&e.target.files[0])decFile(e.target.files[0]);e.target.value=''});
+document.getElementById('btn-close').addEventListener('click',closeR);
+document.getElementById('btn-rescan').addEventListener('click',closeR);
+document.getElementById('btn-copy').addEventListener('click',function(){navigator.clipboard.writeText(lastRaw).then(function(){var b=document.getElementById('btn-copy');b.textContent='Copié ✓';setTimeout(function(){b.textContent='Copier'},1500)})});
+// Scan
+function startScan(){if(scanning||!det)return;scanning=true;var iv=usePoly?250:50,last=0;
+function loop(ts){if(!scanning)return;if(ts-last<iv){raf=requestAnimationFrame(loop);return}last=ts;
+try{if(video.videoWidth===0){raf=requestAnimationFrame(loop);return}ctx.drawImage(video,0,0,canvas.width,canvas.height);
+det.detect(canvas).then(function(r){if(r&&r.length>0&&r[0].rawValue&&r[0].rawValue.length>5&&scanning){scanning=false;fb();onDec(r[0].rawValue)}}).catch(function(){})}catch(e){}
+if(scanning)raf=requestAnimationFrame(loop)}raf=requestAnimationFrame(loop)}
+function stopScan(){scanning=false;if(raf)cancelAnimationFrame(raf)}
+async function manual(){if(video.videoWidth===0||!det)return;ctx.drawImage(video,0,0,canvas.width,canvas.height);
+var vs=[canvas,enh(canvas),crop(canvas,.55),bin(canvas)];
+for(var i=0;i<vs.length;i++){try{var r=await det.detect(vs[i]);if(r&&r.length>0&&r[0].rawValue&&r[0].rawValue.length>5){fb();onDec(r[0].rawValue);return}}catch(e){}}
+setPill('err','Non détecté');setTimeout(function(){setPill('ok',(useNative?'Natif':'WASM')+' ✓')},2000)}
+async function decFile(file){var img=new Image;img.onload=async function(){canvas.width=img.naturalWidth;canvas.height=img.naturalHeight;ctx.drawImage(img,0,0);
+var vs=[canvas,enh(canvas),bin(canvas),crop(canvas,.6)];
+for(var i=0;i<vs.length;i++){try{var r=await det.detect(vs[i]);if(r&&r.length>0&&r[0].rawValue&&r[0].rawValue.length>5){fb();onDec(r[0].rawValue);return}}catch(e){}}
+setPill('err','Non trouvé');setTimeout(function(){setPill('ok','Prêt')},2000)};img.src=URL.createObjectURL(file)}
+function enh(s){var c=document.createElement('canvas');c.width=s.width;c.height=s.height;var x=c.getContext('2d');x.filter='contrast(2) grayscale(1) brightness(1.1)';x.drawImage(s,0,0);return c}
+function crop(s,r){var sz=Math.min(s.width,s.height)*r,x=(s.width-sz)/2,y=(s.height-sz)/2;var c=document.createElement('canvas');c.width=sz;c.height=sz;c.getContext('2d').drawImage(s,x,y,sz,sz,0,0,sz,sz);return c}
+function bin(s){var c=document.createElement('canvas');c.width=s.width;c.height=s.height;var x=c.getContext('2d',{willReadFrequently:true});x.filter='contrast(3) grayscale(1) brightness(1.2)';x.drawImage(s,0,0);x.filter='none';var id=x.getImageData(0,0,c.width,c.height),d=id.data;for(var i=0;i<d.length;i+=4){var g=d[i]*.3+d[i+1]*.59+d[i+2]*.11;d[i]=d[i+1]=d[i+2]=g>128?255:0}x.putImageData(id,0,0);return c}
+// Result
+function onDec(raw){lastRaw=raw;stopScan();render(raw,parseGS1(raw));results.classList.add('open')}
+function closeR(){results.classList.remove('open');if(video.videoWidth>0){canvas.width=video.videoWidth;canvas.height=video.videoHeight}setTimeout(startScan,300)}
+// GS1 Parser
+function parseGS1(raw){var res={fields:[],isGS1:false},data=raw;
+if(data.indexOf(']d2')===0||data.indexOf(']Q3')===0||data.indexOf(']C1')===0)data=data.substring(3);
+while(data.length>0&&(data.charCodeAt(0)<=0x1F||data.charCodeAt(0)===232))data=data.substring(1);
+data=data.replace(/\((\d{2,4})\)/g,'$1');
+if(/^01\d{14}/.test(data)||/^\d{2}/.test(data))res.isGS1=true;
+var pos=0,mx=50;
+while(pos<data.length&&mx-->0){if(data.charCodeAt(pos)<=0x1F){pos++;continue}var ok=false;
+for(var a=0;a<AIS.length;a++){var d=AIS[a],c=d[0];if(data.substring(pos,pos+c.length)!==c)continue;pos+=c.length;var v='';
+if(d[2]>0){v=data.substring(pos,pos+d[2]);pos+=d[2]}else{var e=data.length;for(var vi=pos;vi<data.length;vi++){if(data.charCodeAt(vi)<=0x1F){e=vi;break}}v=data.substring(pos,e);pos=e}
+res.fields.push({ai:c,label:d[1],value:fmtV(c,v),raw:v});ok=true;break}
+if(!ok){if(data.substring(pos).length>0)res.fields.push({ai:'??',label:'Données',value:data.substring(pos),raw:data.substring(pos)});break}}return res}
+function fmtV(ai,v){if(('17'===ai||'11'===ai||'13'===ai||'15'===ai)&&v.length===6)return v.substring(4,6)+'/'+v.substring(2,4)+'/20'+v.substring(0,2);return v}
+function expStatus(fields){var f=null;for(var i=0;i<fields.length;i++){if(fields[i].ai==='17'){f=fields[i];break}}if(!f||f.raw.length!==6)return null;
+var y=2000+parseInt(f.raw.substring(0,2),10),m=parseInt(f.raw.substring(2,4),10)-1,d=parseInt(f.raw.substring(4,6),10)||28;
+var exp=new Date(y,m,d),diff=Math.ceil((exp-new Date)/864e5);
+if(diff<0)return{t:'Expiré depuis '+Math.abs(diff)+' jours',c:'expired'};
+if(diff<90)return{t:'Expire dans '+diff+' jours',c:'warn'};
+return{t:'Valide — '+diff+' jours restants',c:'valid'}}
+var AIS=[['00','SSCC',18],['01','GTIN',14],['02','GTIN contenu',14],['10','N° Lot',0],['11','Date production',6],['13','Date emballage',6],['15','DLC optimale',6],['17','Date expiration',6],['20','Variante',2],['21','N° Série',0],['22','Données sec.',0],['235','Extension TPX',0],['240','ID compl.',0],['241','N° Client',0],['250','Série sec.',0],['253','ID global',0],['30','Quantité',0],['3100','Poids (kg)',6],['3101','Poids (kg)',6],['3102','Poids (kg)',6],['3103','Poids (kg)',6],['310','Poids (kg)',6],['320','Poids (lb)',6],['37','Nb unités',0],['400','N° Commande',0],['410','GLN dest.',13],['411','GLN fact.',13],['414','GLN lieu',13],['415','GLN émetteur',13],['421','CP dest.',0],['422','Pays origine',3],['710','NHRN DE',0],['711','NHRN FR (CIP)',0],['712','NHRN ES',0],['713','NHRN BR',0],['714','NHRN PT',0],['7003','Exp. date/heure',10],['91','Info interne',0],['92','Info interne',0],['93','Info interne',0]];
+AIS.sort(function(a,b){return b[0].length-a[0].length||a[0].localeCompare(b[0])});
+// Render
+function render(raw,gs1){var h='';
+if(gs1.isGS1&&gs1.fields.length>0){h+='<div class="badge">📦 GS1 DataMatrix</div>';
+var gtin=fd(gs1.fields,'01'),lot=fd(gs1.fields,'10'),exp=fd(gs1.fields,'17'),sn=fd(gs1.fields,'21'),es=expStatus(gs1.fields);
+h+='<div class="product-hero">';
+if(gtin)h+='<div class="gtin">GTIN '+esc(gtin.value)+'</div>';
+h+='<div class="title">Médicament vétérinaire</div><div class="meta-row">';
+if(lot)h+='<div class="meta-chip"><span>🏷</span><span><span class="lbl">Lot </span><strong>'+esc(lot.value)+'</strong></span></div>';
+if(exp)h+='<div class="meta-chip exp"><span>📅</span><span><span class="lbl">Exp </span><strong>'+esc(exp.value)+'</strong></span></div>';
+if(sn)h+='<div class="meta-chip"><span>🔢</span><span><span class="lbl">SN </span><strong>'+esc(sn.value)+'</strong></span></div>';
+h+='</div>';
+if(es)h+='<div class="expiry-bar '+es.c+'">'+(es.c==='valid'?'✅':es.c==='warn'?'⚠️':'❌')+' '+es.t+'</div>';
+h+='</div>';
+h+='<div class="section-title">Données GS1 complètes</div><div class="fields">';
+for(var i=0;i<gs1.fields.length;i++){var fi=gs1.fields[i];h+='<div class="field"><div class="field-left"><div class="field-ai">('+esc(fi.ai)+')</div><div class="field-label">'+esc(fi.label)+'</div></div><div class="field-val">'+esc(fi.value)+'</div></div>'}
+h+='</div>'}else{h+='<div class="badge" style="background:var(--bg3);color:var(--text-dim);border-color:var(--border)">DataMatrix</div>';
+h+='<div class="product-hero"><div class="title" style="font-size:1.05rem;word-break:break-all">'+esc(raw)+'</div></div>'}
+h+='<div class="section-title">Brut</div><div class="raw-block"><div class="raw-label">'+raw.length+' car.</div><pre>'+esc(fmtR(raw))+'</pre></div>';
+body.innerHTML=h}
+function fd(f,ai){for(var i=0;i<f.length;i++){if(f[i].ai===ai)return f[i]}return null}
+function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+function fmtR(s){return s.replace(/[\x00-\x1F]/g,function(c){var n=c.charCodeAt(0);return{29:'⟨GS⟩',30:'⟨RS⟩',31:'⟨US⟩'}[n]||'⟨'+n.toString(16).padStart(2,'0')+'⟩'})}
+}catch(e){setPill('err','Crash');console.error(e)}})();
+if('serviceWorker' in navigator){navigator.serviceWorker.getRegistrations().then(function(rs){rs.forEach(function(r){r.unregister()});setTimeout(function(){navigator.serviceWorker.register('sw.js').catch(function(){})},500)})}
 </script>
 </body>
 </html>
