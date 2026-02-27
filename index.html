@@ -229,6 +229,9 @@ async function onDec(raw){
       medInfo.name=res.nom;medInfo.form=res.forme;medInfo.sub=res.titulaire;
       if(res.especes)medInfo.especes=res.especes;
       if(res.amm)medInfo.amm=res.amm;
+      if(res.fromAnmv&&medInfo.type!=='human'){
+        medInfo.type='vet';medInfo.typeLabel='Médicament vétérinaire';medInfo.isVet=true;
+      }
       if(medInfo.type==='unknown'&&(res.especes||res.amm)){
         medInfo.type='vet';medInfo.typeLabel='Médicament vétérinaire';medInfo.isVet=true;
       }
@@ -297,13 +300,13 @@ async function lookupMed(medInfo){
   if(g14.length===13)g14='0'+g14;
   var g13=g14.length===14&&g14[0]==='0'?g14.substring(1):g14;
 
-  // Vet meds: lookup in embedded ANMV database
-  if(medInfo.isVet){
-    var db=await loadAnmvDb();
-    var entry=db[g14]||db[g13];
-    if(entry)return{nom:entry.n,forme:entry.p||null,titulaire:entry.t||null};
-    return null;
-  }
+  // ALWAYS check ANMV vet database first (covers all prefixes)
+  var db=await loadAnmvDb();
+  var entry=db[g14]||db[g13];
+  if(entry)return{nom:entry.n,forme:entry.p||null,titulaire:entry.t||null,fromAnmv:true};
+
+  // If explicitly vet but not in ANMV, no other source
+  if(medInfo.isVet)return null;
 
   var promises=[];
 
