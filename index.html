@@ -44,7 +44,6 @@
       margin: 0 auto;
     }
 
-    /* ─── Header ─── */
     .header {
       padding: 16px 20px;
       display: flex;
@@ -64,8 +63,17 @@
     .header-icon svg { width: 20px; height: 20px; }
     .header h1 { font-size: 1.15rem; font-weight: 700; letter-spacing: -0.02em; }
     .header small { font-size: 0.7rem; color: var(--text-dim); font-weight: 400; }
+    .engine-badge {
+      margin-left: auto;
+      font-size: 0.6rem;
+      padding: 3px 8px;
+      border-radius: 6px;
+      background: var(--surface2);
+      color: var(--text-dim);
+      font-family: 'JetBrains Mono', monospace;
+      white-space: nowrap;
+    }
 
-    /* ─── Camera View ─── */
     .camera-container {
       position: relative;
       flex: 1;
@@ -75,16 +83,7 @@
       align-items: center;
       justify-content: center;
     }
-    #video {
-      width: 100%; height: 100%;
-      object-fit: cover;
-    }
-    #canvas-overlay {
-      position: absolute;
-      top: 0; left: 0;
-      width: 100%; height: 100%;
-      pointer-events: none;
-    }
+    #video { width: 100%; height: 100%; object-fit: cover; }
     .scan-zone {
       position: absolute;
       top: 50%; left: 50%;
@@ -101,247 +100,90 @@
       opacity: 0.6;
     }
     .scan-corner {
-      position: absolute;
-      width: 28px; height: 28px;
-      border-color: var(--accent);
-      border-style: solid;
-      border-width: 0;
+      position: absolute; width: 28px; height: 28px;
+      border-color: var(--accent); border-style: solid; border-width: 0;
     }
-    .scan-corner.tl { top: -2px; left: -2px; border-top-width: 3px; border-left-width: 3px; border-radius: 12px 0 0 0; }
-    .scan-corner.tr { top: -2px; right: -2px; border-top-width: 3px; border-right-width: 3px; border-radius: 0 12px 0 0; }
-    .scan-corner.bl { bottom: -2px; left: -2px; border-bottom-width: 3px; border-left-width: 3px; border-radius: 0 0 0 12px; }
-    .scan-corner.br { bottom: -2px; right: -2px; border-bottom-width: 3px; border-right-width: 3px; border-radius: 0 0 12px 0; }
-
+    .scan-corner.tl { top:-2px;left:-2px;border-top-width:3px;border-left-width:3px;border-radius:12px 0 0 0; }
+    .scan-corner.tr { top:-2px;right:-2px;border-top-width:3px;border-right-width:3px;border-radius:0 12px 0 0; }
+    .scan-corner.bl { bottom:-2px;left:-2px;border-bottom-width:3px;border-left-width:3px;border-radius:0 0 0 12px; }
+    .scan-corner.br { bottom:-2px;right:-2px;border-bottom-width:3px;border-right-width:3px;border-radius:0 0 12px 0; }
     .scan-line {
-      position: absolute;
-      top: 0; left: 10%;
-      width: 80%; height: 2px;
+      position: absolute; top:0; left:10%; width:80%; height:2px;
       background: linear-gradient(90deg, transparent, var(--accent), transparent);
       border-radius: 2px;
       animation: scanMove 2s ease-in-out infinite;
       box-shadow: 0 0 12px var(--accent);
     }
-    @keyframes scanMove {
-      0%, 100% { top: 5%; opacity: 0.4; }
-      50% { top: 92%; opacity: 1; }
-    }
-
+    @keyframes scanMove { 0%,100%{top:5%;opacity:.4} 50%{top:92%;opacity:1} }
     .camera-overlay-mask {
-      position: absolute;
-      inset: 0;
-      pointer-events: none;
-      background:
-        radial-gradient(ellipse 260px 260px at center, transparent 45%, rgba(0,0,0,0.6) 70%);
+      position: absolute; inset:0; pointer-events:none;
+      background: radial-gradient(ellipse 260px 260px at center, transparent 45%, rgba(0,0,0,0.6) 70%);
     }
 
-    /* ─── Status Bar ─── */
     .status-bar {
-      position: absolute;
-      bottom: 0; left: 0; right: 0;
+      position: absolute; bottom:0; left:0; right:0;
       padding: 16px 20px;
       background: linear-gradient(transparent, rgba(0,0,0,0.85));
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-      z-index: 5;
+      display: flex; align-items: center; justify-content: space-between; gap:12px; z-index:5;
     }
-    .status-text {
-      font-size: 0.82rem;
-      color: var(--text-dim);
-      display: flex; align-items: center; gap: 8px;
-    }
-    .status-dot {
-      width: 8px; height: 8px;
-      border-radius: 50%;
-      background: var(--accent);
-      animation: pulse 1.5s ease infinite;
-    }
-    .status-dot.error { background: var(--danger); animation: none; }
-    .status-dot.success { background: var(--accent); animation: none; }
-    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+    .status-text { font-size:.82rem; color:var(--text-dim); display:flex; align-items:center; gap:8px; }
+    .status-dot { width:8px;height:8px;border-radius:50%;background:var(--accent);animation:pulse 1.5s ease infinite; }
+    .status-dot.error { background:var(--danger);animation:none; }
+    .status-dot.success { background:var(--accent);animation:none; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
 
-    /* ─── Controls ─── */
     .controls {
-      padding: 12px 20px;
-      background: var(--bg);
-      border-top: 1px solid var(--border);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 16px;
+      padding:12px 20px; background:var(--bg); border-top:1px solid var(--border);
+      display:flex; align-items:center; justify-content:center; gap:16px;
     }
-    .btn {
-      border: none; cursor: pointer;
-      font-family: inherit;
-      border-radius: 12px;
-      font-weight: 600;
-      transition: all 0.15s;
-      display: flex; align-items: center; gap: 8px;
-    }
-    .btn:active { transform: scale(0.96); }
-    .btn-primary {
-      background: var(--accent);
-      color: #0a0a0f;
-      padding: 14px 28px;
-      font-size: 0.92rem;
-    }
-    .btn-icon {
-      width: 48px; height: 48px;
-      background: var(--surface2);
-      color: var(--text);
-      display: grid; place-items: center;
-      border-radius: 50%;
-    }
-    .btn-icon svg { width: 20px; height: 20px; }
-    .btn-icon.active { background: var(--accent-dim); color: var(--accent); }
+    .btn { border:none;cursor:pointer;font-family:inherit;border-radius:12px;font-weight:600;transition:all .15s;display:flex;align-items:center;gap:8px; }
+    .btn:active { transform:scale(.96); }
+    .btn-primary { background:var(--accent);color:#0a0a0f;padding:14px 28px;font-size:.92rem; }
+    .btn-icon { width:48px;height:48px;background:var(--surface2);color:var(--text);display:grid;place-items:center;border-radius:50%; }
+    .btn-icon svg { width:20px;height:20px; }
+    .btn-icon.active { background:var(--accent-dim);color:var(--accent); }
+    .btn-capture { width:64px;height:64px;background:var(--accent);border-radius:50%;display:grid;place-items:center;border:3px solid var(--bg);box-shadow:0 0 0 2px var(--accent); }
+    .btn-capture svg { width:28px;height:28px;color:var(--bg); }
 
-    .btn-capture {
-      width: 64px; height: 64px;
-      background: var(--accent);
-      border-radius: 50%;
-      display: grid; place-items: center;
-      border: 3px solid var(--bg);
-      box-shadow: 0 0 0 2px var(--accent);
-    }
-    .btn-capture svg { width: 28px; height: 28px; color: var(--bg); }
-
-    /* ─── Results Panel ─── */
     .results-panel {
-      position: fixed;
-      inset: 0;
-      background: var(--bg);
-      z-index: 100;
-      display: flex;
-      flex-direction: column;
-      transform: translateY(100%);
-      transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+      position:fixed;inset:0;background:var(--bg);z-index:100;
+      display:flex;flex-direction:column;
+      transform:translateY(100%);transition:transform .35s cubic-bezier(.16,1,.3,1);
     }
-    .results-panel.open { transform: translateY(0); }
-    .results-header {
-      padding: 16px 20px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      border-bottom: 1px solid var(--border);
-    }
-    .results-header h2 { font-size: 1.1rem; font-weight: 700; }
-    .btn-close {
-      width: 36px; height: 36px;
-      background: var(--surface2);
-      border: none; color: var(--text);
-      border-radius: 50%;
-      display: grid; place-items: center;
-      cursor: pointer;
-      font-size: 1.2rem;
-    }
-    .results-body {
-      flex: 1;
-      overflow-y: auto;
-      padding: 16px 20px;
-      -webkit-overflow-scrolling: touch;
-    }
-    .result-badge {
-      display: inline-flex;
-      align-items: center; gap: 6px;
-      padding: 6px 12px;
-      border-radius: 8px;
-      font-size: 0.75rem;
-      font-weight: 600;
-      margin-bottom: 16px;
-    }
-    .result-badge.success { background: #00e5a018; color: var(--accent); }
-    .result-badge.warning { background: #ffaa0018; color: var(--warning); }
+    .results-panel.open { transform:translateY(0); }
+    .results-header { padding:16px 20px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border); }
+    .results-header h2 { font-size:1.1rem;font-weight:700; }
+    .btn-close { width:36px;height:36px;background:var(--surface2);border:none;color:var(--text);border-radius:50%;display:grid;place-items:center;cursor:pointer;font-size:1.2rem; }
+    .results-body { flex:1;overflow-y:auto;padding:16px 20px;-webkit-overflow-scrolling:touch; }
+    .result-badge { display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:8px;font-size:.75rem;font-weight:600;margin-bottom:16px; }
+    .result-badge.success { background:#00e5a018;color:var(--accent); }
+    .result-badge.warning { background:#ffaa0018;color:var(--warning); }
 
-    .raw-data {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 16px;
-      margin-bottom: 20px;
-    }
-    .raw-data-label {
-      font-size: 0.7rem;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      color: var(--text-dim);
-      margin-bottom: 8px;
-    }
-    .raw-data pre {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 0.78rem;
-      color: var(--accent);
-      white-space: pre-wrap;
-      word-break: break-all;
-      line-height: 1.6;
-    }
+    .raw-data { background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:20px; }
+    .raw-data-label { font-size:.7rem;text-transform:uppercase;letter-spacing:.08em;color:var(--text-dim);margin-bottom:8px; }
+    .raw-data pre { font-family:'JetBrains Mono',monospace;font-size:.78rem;color:var(--accent);white-space:pre-wrap;word-break:break-all;line-height:1.6; }
 
-    .fields-grid {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
-    .field-card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 14px 16px;
-    }
-    .field-tag {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 0.68rem;
-      color: var(--accent);
-      font-weight: 600;
-      margin-bottom: 2px;
-    }
-    .field-label {
-      font-size: 0.72rem;
-      color: var(--text-dim);
-      margin-bottom: 4px;
-    }
-    .field-value {
-      font-size: 0.95rem;
-      font-weight: 600;
-      color: var(--text);
-      word-break: break-word;
-    }
+    .fields-grid { display:flex;flex-direction:column;gap:8px; }
+    .field-card { background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 16px; }
+    .field-tag { font-family:'JetBrains Mono',monospace;font-size:.68rem;color:var(--accent);font-weight:600;margin-bottom:2px; }
+    .field-label { font-size:.72rem;color:var(--text-dim);margin-bottom:4px; }
+    .field-value { font-size:.95rem;font-weight:600;color:var(--text);word-break:break-word; }
 
-    .results-actions {
-      padding: 16px 20px;
-      border-top: 1px solid var(--border);
-      display: flex; gap: 10px;
-    }
-    .results-actions .btn { flex: 1; justify-content: center; }
-    .btn-secondary {
-      background: var(--surface2);
-      color: var(--text);
-      padding: 14px 20px;
-      font-size: 0.88rem;
-    }
+    .results-actions { padding:16px 20px;border-top:1px solid var(--border);display:flex;gap:10px; }
+    .results-actions .btn { flex:1;justify-content:center; }
+    .btn-secondary { background:var(--surface2);color:var(--text);padding:14px 20px;font-size:.88rem; }
 
-    /* ─── No Support Fallback ─── */
-    .no-support {
-      padding: 40px 20px;
-      text-align: center;
-    }
-    .no-support h2 { margin-bottom: 12px; }
-    .no-support p { color: var(--text-dim); line-height: 1.6; margin-bottom: 20px; }
-    .file-input-wrapper {
-      position: relative;
-      display: inline-block;
-    }
-    .file-input-wrapper input[type="file"] {
-      position: absolute;
-      inset: 0;
-      opacity: 0;
-      cursor: pointer;
-    }
+    .loading-overlay { position:absolute;inset:0;background:rgba(0,0,0,.7);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;z-index:20; }
+    .loading-overlay.hidden { display:none; }
+    .spinner { width:40px;height:40px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite; }
+    @keyframes spin { to{transform:rotate(360deg)} }
+    .loading-text { font-size:.85rem;color:var(--text-dim); }
 
-    /* ─── Hidden ─── */
-    .hidden { display: none !important; }
-    #capture-canvas { display: none; }
+    .file-input-wrapper { position:relative;display:inline-block; }
+    .file-input-wrapper input[type="file"] { position:absolute;inset:0;opacity:0;cursor:pointer; }
+    .hidden { display:none !important; }
+    #capture-canvas { display:none; }
 
-    /* Safe area for notch phones */
     @supports (padding-top: env(safe-area-inset-top)) {
       .header { padding-top: calc(16px + env(safe-area-inset-top)); }
       .results-actions { padding-bottom: calc(16px + env(safe-area-inset-bottom)); }
@@ -352,83 +194,69 @@
 <body>
 
 <div class="app">
-  <!-- Header -->
   <div class="header">
     <div class="header-icon">
       <svg viewBox="0 0 24 24" fill="none" stroke="#0a0a0f" stroke-width="2.5" stroke-linecap="round">
-        <rect x="3" y="3" width="7" height="7" rx="1"/>
-        <rect x="14" y="3" width="7" height="7" rx="1"/>
-        <rect x="3" y="14" width="7" height="7" rx="1"/>
-        <rect x="14" y="14" width="7" height="7" rx="1"/>
+        <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>
+        <rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>
       </svg>
     </div>
     <div>
       <h1>2D-Doc Scanner</h1>
       <small>Lecture &amp; décodage documents sécurisés</small>
     </div>
+    <div class="engine-badge" id="engine-badge">…</div>
   </div>
 
-  <!-- Camera -->
   <div class="camera-container" id="camera-container">
     <video id="video" autoplay playsinline muted></video>
-    <canvas id="canvas-overlay"></canvas>
     <div class="camera-overlay-mask"></div>
     <div class="scan-zone">
-      <div class="scan-corner tl"></div>
-      <div class="scan-corner tr"></div>
-      <div class="scan-corner bl"></div>
-      <div class="scan-corner br"></div>
+      <div class="scan-corner tl"></div><div class="scan-corner tr"></div>
+      <div class="scan-corner bl"></div><div class="scan-corner br"></div>
       <div class="scan-line"></div>
     </div>
-
+    <div class="loading-overlay hidden" id="loading-overlay">
+      <div class="spinner"></div>
+      <div class="loading-text" id="loading-text">Chargement…</div>
+    </div>
     <div class="status-bar">
       <div class="status-text">
         <div class="status-dot" id="status-dot"></div>
         <span id="status-msg">Initialisation…</span>
       </div>
-      <div id="fps-counter" style="font-family:'JetBrains Mono',monospace;font-size:0.7rem;color:var(--text-dim);"></div>
+      <div id="fps-counter" style="font-family:'JetBrains Mono',monospace;font-size:.7rem;color:var(--text-dim);"></div>
     </div>
   </div>
 
-  <!-- Controls -->
-  <div class="controls" id="controls">
-    <button class="btn btn-icon" id="btn-torch" title="Lampe torche">
+  <div class="controls">
+    <button class="btn btn-icon" id="btn-torch" title="Torche">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-        <path d="M9 18h6"/>
-        <path d="M10 22h4"/>
-        <path d="M12 2v1"/>
-        <path d="m4.9 4.9.7.7"/>
-        <path d="M2 12h1"/>
-        <path d="m19.1 4.9-.7.7"/>
-        <path d="M22 12h-1"/>
+        <path d="M9 18h6"/><path d="M10 22h4"/><path d="M12 2v1"/>
+        <path d="m4.9 4.9.7.7"/><path d="M2 12h1"/><path d="m19.1 4.9-.7.7"/><path d="M22 12h-1"/>
         <path d="M15.5 8a3.5 3.5 0 0 0-7 0c0 2 1.5 3 2 4h3c.5-1 2-2 2-4z"/>
       </svg>
     </button>
-
-    <button class="btn btn-capture" id="btn-capture" title="Capturer une image">
+    <button class="btn btn-capture" id="btn-capture" title="Capturer">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
         <circle cx="12" cy="13" r="4"/>
         <path d="M9 2 7.2 4H4a1 1 0 0 0-1 1v14a1 1 0 0 0 1 1h16a1 1 0 0 0 1-1V5a1 1 0 0 0-1-1h-3.2L15 2z"/>
       </svg>
     </button>
-
-    <label class="btn btn-icon file-input-wrapper" title="Charger une image">
+    <label class="btn btn-icon file-input-wrapper" title="Image">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
         <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-        <polyline points="17 8 12 3 7 8"/>
-        <line x1="12" y1="3" x2="12" y2="15"/>
+        <polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
       </svg>
-      <input type="file" accept="image/*" id="file-input" capture="environment">
+      <input type="file" accept="image/*" id="file-input">
     </label>
   </div>
-
   <canvas id="capture-canvas"></canvas>
 </div>
 
-<!-- Results Panel -->
 <div class="results-panel" id="results-panel">
   <div class="results-header">
-    <h2>Résultat du scan</h2>
+    <h2>Résultat</h2>
     <button class="btn-close" id="btn-close-results">&times;</button>
   </div>
   <div class="results-body" id="results-body"></div>
@@ -439,286 +267,319 @@
 </div>
 
 <script>
+// ═══════════════════════════════════════════════
+// ZBar WASM Loader — self-contained fallback
+// We load zbar.wasm from CDN for iOS/non-native
+// ═══════════════════════════════════════════════
+(function loadZbarFallback() {
+  // Only load if native BarcodeDetector doesn't support data_matrix
+  if ('BarcodeDetector' in window) {
+    BarcodeDetector.getSupportedFormats().then(f => {
+      if (!f.includes('data_matrix')) loadZbar();
+    }).catch(() => loadZbar());
+  } else {
+    loadZbar();
+  }
+
+  function loadZbar() {
+    const script = document.createElement('script');
+    script.src = 'https://cdn.jsdelivr.net/npm/zbar.wasm@2.1.0/dist/index.js';
+    script.onload = () => {
+      if (window.zbarWasm) {
+        window.__zbarWasm = window.zbarWasm;
+        window.__zbarReady = true;
+        console.log('[ZBar] WASM loaded from CDN');
+      }
+    };
+    script.onerror = () => {
+      // Try alternate CDN
+      const s2 = document.createElement('script');
+      s2.src = 'https://unpkg.com/zbar.wasm@2.1.0/dist/index.js';
+      s2.onload = () => {
+        if (window.zbarWasm) {
+          window.__zbarWasm = window.zbarWasm;
+          window.__zbarReady = true;
+          console.log('[ZBar] WASM loaded from unpkg');
+        }
+      };
+      document.head.appendChild(s2);
+    };
+    document.head.appendChild(script);
+  }
+})();
+</script>
+
+<script>
 // ═══════════════════════════════════════
-// 2D-Doc Scanner — Full PWA Application
+// 2D-Doc Scanner — Dual Engine PWA
+// BarcodeDetector (Android) + ZBar WASM (iOS)
 // ═══════════════════════════════════════
 
 const App = (() => {
-  // DOM refs
-  const video = document.getElementById('video');
-  const captureCanvas = document.getElementById('capture-canvas');
+  const $ = id => document.getElementById(id);
+  const video = $('video');
+  const captureCanvas = $('capture-canvas');
   const captureCtx = captureCanvas.getContext('2d', { willReadFrequently: true });
-  const statusDot = document.getElementById('status-dot');
-  const statusMsg = document.getElementById('status-msg');
-  const fpsCounter = document.getElementById('fps-counter');
-  const resultsPanel = document.getElementById('results-panel');
-  const resultsBody = document.getElementById('results-body');
-  const btnTorch = document.getElementById('btn-torch');
-  const btnCapture = document.getElementById('btn-capture');
-  const btnCloseResults = document.getElementById('btn-close-results');
-  const btnCopy = document.getElementById('btn-copy');
-  const btnRescan = document.getElementById('btn-rescan');
-  const fileInput = document.getElementById('file-input');
+  const statusDot = $('status-dot');
+  const statusMsg = $('status-msg');
+  const fpsCounter = $('fps-counter');
+  const resultsPanel = $('results-panel');
+  const resultsBody = $('results-body');
+  const btnTorch = $('btn-torch');
+  const btnCapture = $('btn-capture');
+  const btnCloseResults = $('btn-close-results');
+  const btnCopy = $('btn-copy');
+  const btnRescan = $('btn-rescan');
+  const fileInput = $('file-input');
+  const engineBadge = $('engine-badge');
+  const loadingOverlay = $('loading-overlay');
+  const loadingText = $('loading-text');
 
   let stream = null;
-  let detector = null;
+  let nativeDetector = null;
+  let useNative = false;
+  let useZbar = false;
   let scanning = false;
   let torchOn = false;
-  let scanInterval = null;
   let lastRawResult = '';
+  let scanRafId = null;
 
   // ─── Init ───
   async function init() {
-    // Check BarcodeDetector support
+    showLoading('Détection du moteur…');
+
+    // 1) Native BarcodeDetector?
     if ('BarcodeDetector' in window) {
       try {
         const formats = await BarcodeDetector.getSupportedFormats();
-        console.log('Supported barcode formats:', formats);
         if (formats.includes('data_matrix')) {
-          detector = new BarcodeDetector({ formats: ['data_matrix'] });
-          setStatus('scanning', 'Détecteur DataMatrix prêt');
-        } else if (formats.includes('qr_code')) {
-          // Fallback: some 2D-Doc might be QR
-          detector = new BarcodeDetector({ formats: ['data_matrix', 'qr_code'].filter(f => formats.includes(f)) });
-          setStatus('warning', 'DataMatrix non supporté nativement, mode dégradé');
+          nativeDetector = new BarcodeDetector({ formats: ['data_matrix'] });
+          useNative = true;
+          engineBadge.textContent = 'Native';
+          engineBadge.style.color = 'var(--accent)';
         }
-      } catch (e) {
-        console.warn('BarcodeDetector init error:', e);
+      } catch(e) {}
+    }
+
+    // 2) ZBar WASM fallback
+    if (!useNative) {
+      showLoading('Chargement décodeur WASM…');
+      engineBadge.textContent = 'WASM…';
+      const ok = await waitFor(() => window.__zbarReady, 12000);
+      if (ok) {
+        useZbar = true;
+        engineBadge.textContent = 'WASM';
+        engineBadge.style.color = 'var(--warning)';
+      } else {
+        engineBadge.textContent = 'Manuel';
+        engineBadge.style.color = 'var(--danger)';
       }
     }
 
-    if (!detector) {
-      setStatus('warning', 'BarcodeDetector indisponible — utilisez la capture photo');
-    }
-
+    hideLoading();
     await startCamera();
     setupEvents();
   }
 
+  function waitFor(cond, ms) {
+    return new Promise(r => {
+      if (cond()) return r(true);
+      const t0 = Date.now();
+      const iv = setInterval(() => {
+        if (cond()) { clearInterval(iv); r(true); }
+        else if (Date.now() - t0 > ms) { clearInterval(iv); r(false); }
+      }, 150);
+    });
+  }
+
+  function showLoading(msg) { loadingOverlay.classList.remove('hidden'); loadingText.textContent = msg; }
+  function hideLoading() { loadingOverlay.classList.add('hidden'); }
+
   // ─── Camera ───
   async function startCamera() {
     try {
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+
       const constraints = {
-        video: {
-          facingMode: { ideal: 'environment' },
-          width: { ideal: 1920 },
-          height: { ideal: 1080 },
-          focusMode: { ideal: 'continuous' },
-          exposureMode: { ideal: 'continuous' },
-        },
+        video: isIOS
+          ? { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } }
+          : { facingMode: { ideal: 'environment' }, width: { ideal: 1920 }, height: { ideal: 1080 } },
         audio: false,
       };
 
       stream = await navigator.mediaDevices.getUserMedia(constraints);
       video.srcObject = stream;
+      await video.play().catch(() => {});
 
       video.addEventListener('loadedmetadata', () => {
         captureCanvas.width = video.videoWidth;
         captureCanvas.height = video.videoHeight;
-        setStatus('scanning', 'Caméra active — placez le 2D-Doc dans le cadre');
+        setStatus('scanning', 'Placez le 2D-Doc dans le cadre');
         startScanning();
       });
-    } catch (err) {
-      console.error('Camera error:', err);
-      setStatus('error', 'Caméra inaccessible — utilisez l\'import d\'image');
+    } catch(err) {
+      console.error('[Camera]', err);
+      setStatus('error', 'Caméra inaccessible — importez une image');
     }
   }
 
-  // ─── Continuous Scanning ───
+  // ─── Scan Loop ───
   function startScanning() {
-    if (!detector || scanning) return;
+    if (scanning || (!useNative && !useZbar)) {
+      if (!useNative && !useZbar) setStatus('warning', 'Utilisez le bouton capture ou import');
+      return;
+    }
     scanning = true;
-    let frameCount = 0;
-    let lastFpsTime = performance.now();
+    let fc = 0, lastFps = performance.now(), lastScan = 0;
+    const interval = useZbar ? 250 : 0;
 
-    const scan = async () => {
+    const loop = async (ts) => {
       if (!scanning) return;
+      if (ts - lastScan < interval) { scanRafId = requestAnimationFrame(loop); return; }
+      lastScan = ts;
 
       try {
-        // Capture frame
-        captureCtx.drawImage(video, 0, 0);
+        captureCtx.drawImage(video, 0, 0, captureCanvas.width, captureCanvas.height);
 
-        // Try detection on full frame
-        let results = await detector.detect(captureCanvas);
+        let raw = await tryDecode(captureCanvas);
+        if (!raw) raw = await tryDecode(enhance(captureCanvas));
+        if (!raw) raw = await tryDecode(cropCenter(captureCanvas, 0.55));
+        if (!raw) raw = await tryDecode(binarize(cropCenter(captureCanvas, 0.55)));
 
-        // If no result, try cropped center (better focus on the 2D-Doc area)
-        if (results.length === 0) {
-          const cw = captureCanvas.width;
-          const ch = captureCanvas.height;
-          const cropSize = Math.min(cw, ch) * 0.6;
-          const cx = (cw - cropSize) / 2;
-          const cy = (ch - cropSize) / 2;
-
-          const cropCanvas = document.createElement('canvas');
-          cropCanvas.width = cropSize;
-          cropCanvas.height = cropSize;
-          const cropCtx = cropCanvas.getContext('2d');
-          cropCtx.drawImage(captureCanvas, cx, cy, cropSize, cropSize, 0, 0, cropSize, cropSize);
-
-          results = await detector.detect(cropCanvas);
+        if (raw && raw.length > 10) {
+          scanning = false;
+          vibrate();
+          handleResult(raw);
+          return;
         }
 
-        // Also try with enhanced contrast
-        if (results.length === 0) {
-          const enhanced = enhanceImage(captureCanvas);
-          results = await detector.detect(enhanced);
+        fc++;
+        if (performance.now() - lastFps >= 1000) {
+          fpsCounter.textContent = `${fc} scan/s`;
+          fc = 0; lastFps = performance.now();
         }
+      } catch(e) {}
 
-        if (results.length > 0) {
-          const raw = results[0].rawValue;
-          if (raw && raw.length > 10) {
-            scanning = false;
-            vibrate();
-            handleResult(raw);
-            return;
+      scanRafId = requestAnimationFrame(loop);
+    };
+    scanRafId = requestAnimationFrame(loop);
+  }
+
+  function stopScanning() { scanning = false; if (scanRafId) cancelAnimationFrame(scanRafId); }
+
+  // ─── Decode dispatch ───
+  async function tryDecode(canvas) {
+    if (useNative) {
+      const results = await nativeDetector.detect(canvas);
+      if (results.length > 0 && results[0].rawValue?.length > 5) return results[0].rawValue;
+    }
+    if (useZbar && window.__zbarWasm) {
+      const ctx = canvas.getContext('2d', { willReadFrequently: true });
+      const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      try {
+        const symbols = await window.__zbarWasm.scanImageData(imgData);
+        if (symbols && symbols.length > 0) {
+          for (const sym of symbols) {
+            let val = '';
+            if (sym.typeName?.includes('DataMatrix') || sym.typeName?.includes('QR') || true) {
+              if (typeof sym.decode === 'function') val = sym.decode();
+              else if (sym.data instanceof Uint8Array) val = new TextDecoder('iso-8859-1').decode(sym.data);
+              else if (typeof sym.data === 'string') val = sym.data;
+              if (val && val.length > 5) return val;
+            }
           }
         }
-
-        // FPS
-        frameCount++;
-        const now = performance.now();
-        if (now - lastFpsTime >= 1000) {
-          fpsCounter.textContent = `${frameCount} fps`;
-          frameCount = 0;
-          lastFpsTime = now;
-        }
-      } catch (e) {
-        // Silently continue
-      }
-
-      requestAnimationFrame(scan);
-    };
-
-    requestAnimationFrame(scan);
+      } catch(e) { console.warn('[ZBar]', e); }
+    }
+    return null;
   }
 
-  function stopScanning() {
-    scanning = false;
+  // ─── Image Processing ───
+  function enhance(src) {
+    const c = document.createElement('canvas');
+    c.width = src.width; c.height = src.height;
+    const ctx = c.getContext('2d');
+    ctx.filter = 'contrast(2) grayscale(1) brightness(1.1)';
+    ctx.drawImage(src, 0, 0);
+    return c;
   }
 
-  // ─── Image Enhancement ───
-  function enhanceImage(sourceCanvas) {
-    const w = sourceCanvas.width;
-    const h = sourceCanvas.height;
-    const enhanced = document.createElement('canvas');
-    enhanced.width = w;
-    enhanced.height = h;
-    const ctx = enhanced.getContext('2d');
+  function cropCenter(src, ratio) {
+    const size = Math.min(src.width, src.height) * ratio;
+    const x = (src.width - size) / 2, y = (src.height - size) / 2;
+    const c = document.createElement('canvas');
+    c.width = size; c.height = size;
+    c.getContext('2d').drawImage(src, x, y, size, size, 0, 0, size, size);
+    return c;
+  }
 
-    // Draw with increased contrast
-    ctx.filter = 'contrast(1.8) grayscale(1) brightness(1.1)';
-    ctx.drawImage(sourceCanvas, 0, 0);
+  function binarize(src) {
+    const c = document.createElement('canvas');
+    c.width = src.width; c.height = src.height;
+    const ctx = c.getContext('2d', { willReadFrequently: true });
+    ctx.filter = 'contrast(3) grayscale(1) brightness(1.2)';
+    ctx.drawImage(src, 0, 0);
     ctx.filter = 'none';
-
-    return enhanced;
+    const id = ctx.getImageData(0, 0, c.width, c.height);
+    const d = id.data;
+    for (let i = 0; i < d.length; i += 4) {
+      const g = d[i] * .299 + d[i+1] * .587 + d[i+2] * .114;
+      d[i] = d[i+1] = d[i+2] = g > 128 ? 255 : 0;
+    }
+    ctx.putImageData(id, 0, 0);
+    return c;
   }
 
   // ─── Manual Capture ───
   async function captureAndDecode() {
     if (!video.videoWidth) return;
-
+    setStatus('scanning', 'Analyse…');
     captureCtx.drawImage(video, 0, 0, captureCanvas.width, captureCanvas.height);
 
-    setStatus('scanning', 'Analyse de l\'image…');
+    const variants = [
+      captureCanvas,
+      enhance(captureCanvas),
+      cropCenter(captureCanvas, 0.55),
+      binarize(captureCanvas),
+      binarize(cropCenter(captureCanvas, 0.55)),
+    ];
 
-    if (detector) {
-      try {
-        // Try multiple image processing variants
-        const variants = [
-          captureCanvas,
-          enhanceImage(captureCanvas),
-          sharpenImage(captureCanvas),
-        ];
-
-        for (const variant of variants) {
-          const results = await detector.detect(variant);
-          if (results.length > 0 && results[0].rawValue.length > 10) {
-            vibrate();
-            handleResult(results[0].rawValue);
-            return;
-          }
-        }
-      } catch (e) {
-        console.error('Detection error:', e);
-      }
+    for (const v of variants) {
+      const raw = await tryDecode(v);
+      if (raw && raw.length > 10) { vibrate(); handleResult(raw); return; }
     }
 
-    setStatus('error', 'Aucun 2D-Doc détecté — réessayez');
+    setStatus('error', 'Aucun 2D-Doc détecté');
     setTimeout(() => setStatus('scanning', 'Placez le 2D-Doc dans le cadre'), 2500);
   }
 
-  // ─── Sharpen Image ───
-  function sharpenImage(sourceCanvas) {
-    const w = sourceCanvas.width;
-    const h = sourceCanvas.height;
-    const out = document.createElement('canvas');
-    out.width = w; out.height = h;
-    const ctx = out.getContext('2d');
-
-    // High contrast B&W
-    ctx.filter = 'contrast(2.5) grayscale(1) brightness(1.2)';
-    ctx.drawImage(sourceCanvas, 0, 0);
-    ctx.filter = 'none';
-
-    // Simple threshold
-    const imageData = ctx.getImageData(0, 0, w, h);
-    const data = imageData.data;
-    const threshold = 140;
-    for (let i = 0; i < data.length; i += 4) {
-      const avg = (data[i] + data[i + 1] + data[i + 2]) / 3;
-      const v = avg > threshold ? 255 : 0;
-      data[i] = data[i + 1] = data[i + 2] = v;
-    }
-    ctx.putImageData(imageData, 0, 0);
-    return out;
-  }
-
-  // ─── File Input Decode ───
+  // ─── File Input ───
   async function decodeFromFile(file) {
+    showLoading('Analyse…');
     const img = new Image();
-    const url = URL.createObjectURL(file);
-
     img.onload = async () => {
       captureCanvas.width = img.naturalWidth;
       captureCanvas.height = img.naturalHeight;
       captureCtx.drawImage(img, 0, 0);
-      URL.revokeObjectURL(url);
 
-      setStatus('scanning', 'Analyse de l\'image…');
-
-      if (detector) {
-        const variants = [
-          captureCanvas,
-          enhanceImage(captureCanvas),
-          sharpenImage(captureCanvas),
-        ];
-
-        for (const variant of variants) {
-          try {
-            const results = await detector.detect(variant);
-            if (results.length > 0 && results[0].rawValue.length > 10) {
-              vibrate();
-              handleResult(results[0].rawValue);
-              return;
-            }
-          } catch (e) { /* continue */ }
-        }
+      const variants = [captureCanvas, enhance(captureCanvas), binarize(captureCanvas), cropCenter(captureCanvas, 0.6), binarize(cropCenter(captureCanvas, 0.6))];
+      for (const v of variants) {
+        const raw = await tryDecode(v);
+        if (raw && raw.length > 10) { hideLoading(); vibrate(); handleResult(raw); return; }
       }
-
-      setStatus('error', 'Aucun 2D-Doc trouvé dans l\'image');
+      hideLoading();
+      setStatus('error', 'Aucun 2D-Doc dans l\'image');
       setTimeout(() => setStatus('scanning', 'Placez le 2D-Doc dans le cadre'), 2500);
     };
-
-    img.src = url;
+    img.onerror = () => { hideLoading(); setStatus('error', 'Image illisible'); };
+    img.src = URL.createObjectURL(file);
   }
 
   // ─── Handle Result ───
-  function handleResult(rawValue) {
-    lastRawResult = rawValue;
+  function handleResult(raw) {
+    lastRawResult = raw;
     stopScanning();
-
-    const parsed = parse2DDoc(rawValue);
-    renderResults(rawValue, parsed);
+    renderResults(raw, parse2DDoc(raw));
     resultsPanel.classList.add('open');
   }
 
@@ -727,430 +588,171 @@ const App = (() => {
   // ═══════════════════════════════════════
 
   function parse2DDoc(raw) {
-    const result = {
-      isValid: false,
-      header: {},
-      fields: [],
-      signature: null,
-      raw: raw,
-    };
-
+    const res = { isValid: false, header: {}, fields: [], signature: null, raw };
     try {
       let pos = 0;
-
-      // ── Header detection ──
-      // 2D-Doc starts with DC (0x44 0x43) followed by version
-      // Some variants: the first bytes may include control chars
-      let headerStart = raw.indexOf('DC');
-      if (headerStart === -1) {
-        // Try to find the header pattern: 2 chars version, etc.
-        // Some 2D-Docs start directly with the version number
-        // Check if starts with digits
-        if (/^\d{2}/.test(raw)) {
-          headerStart = 0;
-        }
+      // Find DC marker
+      let hStart = -1;
+      for (let i = 0; i < Math.min(10, raw.length - 1); i++) {
+        if (raw[i] === 'D' && raw[i+1] === 'C') { hStart = i; break; }
       }
 
-      if (headerStart >= 0) {
-        pos = headerStart;
-        result.isValid = true;
+      if (hStart >= 0) {
+        pos = hStart + 2;
+        res.header.marker = 'DC';
+        res.isValid = true;
+      } else if (/^0[1-4]/.test(raw)) {
+        res.isValid = true;
+      }
 
-        let headerData;
-        if (raw.substring(pos, pos + 2) === 'DC') {
-          pos += 2;
-          result.header.marker = 'DC';
-        }
-
-        // Version (2 chars)
-        const version = raw.substring(pos, pos + 2);
-        result.header.version = version;
-        pos += 2;
-
-        const ver = parseInt(version, 10);
-
+      if (res.isValid) {
+        res.header.version = raw.substring(pos, pos + 2); pos += 2;
+        const ver = parseInt(res.header.version, 10);
         if (ver >= 1 && ver <= 4) {
-          // CA ID (4 chars)
-          result.header.caId = raw.substring(pos, pos + 4);
-          pos += 4;
-
-          // Certificate ID (4 chars)
-          result.header.certId = raw.substring(pos, pos + 4);
-          pos += 4;
-
-          // Document emission date (4 hex chars = days since 2000-01-01)
-          const emitDateHex = raw.substring(pos, pos + 4);
-          result.header.emissionDate = hexDateToString(emitDateHex);
-          pos += 4;
-
-          // Signature date (4 hex chars)
-          const sigDateHex = raw.substring(pos, pos + 4);
-          result.header.signatureDate = hexDateToString(sigDateHex);
-          pos += 4;
-
-          // Document type ID (2 chars)
-          result.header.docTypeId = raw.substring(pos, pos + 2);
-          pos += 2;
-        }
-      } else {
-        pos = 0;
-        result.isValid = false;
-      }
-
-      // ── Find message zone ──
-      // Message data is between header and signature
-      // Separator: GS (0x1D), RS (0x1E), US (0x1F)
-      const GS = '\x1D';
-      const RS = '\x1E';
-      const US = '\x1F';
-
-      // The data after header until we find the signature separator
-      let messageZone = '';
-      let signatureZone = '';
-
-      const remaining = raw.substring(pos);
-
-      // The signature is typically separated by GS + hex signature
-      // Find the last GS/RS/US followed by hex
-      const sigSepIndex = findSignatureSeparator(remaining);
-
-      if (sigSepIndex >= 0) {
-        messageZone = remaining.substring(0, sigSepIndex);
-        signatureZone = remaining.substring(sigSepIndex + 1);
-        result.signature = signatureZone;
-      } else {
-        messageZone = remaining;
-      }
-
-      // ── Parse fields from message zone ──
-      // Fields are: TAG_ID (2-4 alphanum chars) + VALUE
-      // Separated by US (0x1F) or RS (0x1E) or GS (0x1D)
-      const fieldStrings = messageZone.split(/[\x1D\x1E\x1F]/);
-
-      for (const fieldStr of fieldStrings) {
-        if (!fieldStr || fieldStr.length < 2) continue;
-        const parsed = parseField(fieldStr, result.header.docTypeId);
-        if (parsed) {
-          result.fields.push(parsed);
+          res.header.caId = raw.substring(pos, pos + 4); pos += 4;
+          res.header.certId = raw.substring(pos, pos + 4); pos += 4;
+          res.header.emissionDate = hexDate(raw.substring(pos, pos + 4)); pos += 4;
+          res.header.signatureDate = hexDate(raw.substring(pos, pos + 4)); pos += 4;
+          res.header.docTypeId = raw.substring(pos, pos + 2); pos += 2;
         }
       }
 
-      // If no fields parsed with separators, try continuous parsing
-      if (result.fields.length === 0 && messageZone.length > 0) {
-        const continuousFields = parseContinuousFields(messageZone, result.header.docTypeId);
-        result.fields = continuousFields;
-      }
+      // Split message / signature
+      const rest = raw.substring(pos);
+      const RS = '\x1E', GS = '\x1D', US = '\x1F';
 
-    } catch (e) {
-      console.error('2D-Doc parse error:', e);
-      result.parseError = e.message;
-    }
-
-    return result;
-  }
-
-  function findSignatureSeparator(str) {
-    // Signature is typically after the last GS/RS/US separator
-    // and is a hex-encoded string
-    const seps = ['\x1D', '\x1E', '\x1F'];
-    let lastSepIdx = -1;
-
-    for (const sep of seps) {
-      const idx = str.lastIndexOf(sep);
-      if (idx > lastSepIdx) {
-        // Check if what follows looks like hex signature (mostly hex chars, long)
-        const after = str.substring(idx + 1);
-        if (after.length >= 64 && /^[0-9A-Fa-f\x00-\x1F]+/.test(after.substring(0, 20))) {
-          lastSepIdx = idx;
+      // Find signature: after last RS/GS where remaining is long enough
+      let sigIdx = -1;
+      for (let i = rest.length - 1; i >= 0; i--) {
+        const c = rest[i];
+        if (c === RS || c === GS) {
+          if (rest.length - i - 1 >= 40) { sigIdx = i; break; }
         }
       }
-    }
 
-    // Also check for FF (0xFF) separator
-    const ffIdx = str.lastIndexOf('\xFF');
-    if (ffIdx > lastSepIdx) lastSepIdx = ffIdx;
+      let msg = sigIdx >= 0 ? rest.substring(0, sigIdx) : rest;
+      if (sigIdx >= 0) res.signature = rest.substring(sigIdx + 1);
 
-    return lastSepIdx;
-  }
-
-  function parseField(fieldStr, docType) {
-    // Try to match tag ID (2 to 4 alphanum chars at start)
-    const match = fieldStr.match(/^([A-Z0-9]{2,4})([\s\S]*)$/i);
-    if (!match) return null;
-
-    const tagId = match[1];
-    const value = match[2];
-    const knownTag = KNOWN_TAGS[tagId];
-
-    return {
-      tag: tagId,
-      label: knownTag ? knownTag.label : `Champ ${tagId}`,
-      value: value,
-      description: knownTag ? knownTag.desc : null,
-    };
-  }
-
-  function parseContinuousFields(data, docType) {
-    const fields = [];
-    let pos = 0;
-
-    while (pos < data.length - 1) {
-      // Try 2-char tag first
-      const tag2 = data.substring(pos, pos + 2);
-      const known2 = KNOWN_TAGS[tag2];
-
-      if (known2) {
-        pos += 2;
-        let end = data.length;
-
-        // Find next tag or separator
-        for (let i = pos + 1; i < data.length - 1; i++) {
-          const nextTag = data.substring(i, i + 2);
-          if (KNOWN_TAGS[nextTag] || /[\x1D\x1E\x1F]/.test(data[i])) {
-            end = i;
-            break;
-          }
-        }
-
-        const value = data.substring(pos, end).replace(/[\x1D\x1E\x1F]/g, '');
-        if (value) {
-          fields.push({
-            tag: tag2,
-            label: known2.label,
-            value: value,
-            description: known2.desc,
-          });
-        }
-        pos = end;
-      } else {
-        pos++;
+      // Parse fields: split on US/RS/GS
+      const parts = msg.split(/[\x1D\x1E\x1F]/);
+      for (const p of parts) {
+        if (p.length < 3) continue;
+        const tag = p.substring(0, 2).toUpperCase();
+        const val = p.substring(2);
+        const known = TAGS[tag];
+        res.fields.push({ tag, label: known?.label || `Champ ${tag}`, value: val, desc: known?.desc });
       }
-    }
-
-    return fields;
+    } catch(e) { res.parseError = e.message; }
+    return res;
   }
 
-  function hexDateToString(hex) {
-    const days = parseInt(hex, 16);
-    if (isNaN(days)) return hex;
-    const base = new Date(2000, 0, 1);
-    base.setDate(base.getDate() + days);
-    return base.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  function hexDate(hex) {
+    const d = parseInt(hex, 16);
+    if (isNaN(d) || d > 36500) return hex;
+    const dt = new Date(2000, 0, 1 + d);
+    return dt.toLocaleDateString('fr-FR');
   }
 
-  // ─── Known 2D-Doc Tags ───
-  const KNOWN_TAGS = {
-    // Identity tags
-    '01': { label: 'Nom', desc: 'Nom de famille' },
-    '02': { label: 'Prénoms', desc: 'Prénoms' },
-    '03': { label: 'Date de naissance', desc: 'Date de naissance' },
-    '04': { label: 'Sexe', desc: 'Genre M/F' },
-    '05': { label: 'Adresse ligne 1', desc: 'Première ligne d\'adresse' },
-    '06': { label: 'Adresse ligne 2', desc: 'Complément d\'adresse' },
-    '07': { label: 'Code postal', desc: 'Code postal' },
-    '08': { label: 'Ville', desc: 'Commune' },
-    '09': { label: 'Pays', desc: 'Code pays' },
-    '0A': { label: 'Nationalité', desc: 'Code nationalité' },
-
-    // Document tags
-    '10': { label: 'N° document', desc: 'Numéro de document' },
-    '11': { label: 'Date d\'émission', desc: 'Date d\'émission du document' },
-    '12': { label: 'Date d\'expiration', desc: 'Date d\'expiration' },
-    '13': { label: 'Organisme émetteur', desc: 'Identifiant de l\'organisme émetteur' },
-    '14': { label: 'Catégorie', desc: 'Catégorie de document' },
-
-    // Address / utility tags
-    '20': { label: 'Ligne adresse 1', desc: 'Adresse du destinataire' },
-    '21': { label: 'Ligne adresse 2', desc: 'Complément adresse' },
-    '22': { label: 'Ligne adresse 3', desc: 'Suite adresse' },
-    '23': { label: 'Ligne adresse 4', desc: 'Suite adresse' },
-    '24': { label: 'Code postal', desc: 'Code postal destinataire' },
-    '25': { label: 'Ville destinataire', desc: 'Ville' },
-    '26': { label: 'Pays destinataire', desc: 'Code pays' },
-
-    // Invoice / utility-specific
-    '30': { label: 'N° facture', desc: 'Numéro de facture' },
-    '31': { label: 'N° client', desc: 'Référence client' },
-    '32': { label: 'Montant TTC', desc: 'Montant total TTC en centimes' },
-    '33': { label: 'Date facture', desc: 'Date de la facture' },
-    '34': { label: 'Date paiement', desc: 'Date limite de paiement' },
-    '35': { label: 'SIREN/SIRET', desc: 'N° SIREN ou SIRET' },
-    '36': { label: 'Période début', desc: 'Début de la période facturée' },
-    '37': { label: 'Période fin', desc: 'Fin de la période facturée' },
-
-    // Payslip
-    '40': { label: 'Salaire net', desc: 'Montant net en centimes' },
-    '41': { label: 'Salaire brut', desc: 'Montant brut en centimes' },
-    '42': { label: 'Période paie', desc: 'Mois de la paie' },
-    '43': { label: 'Heures travaillées', desc: 'Nombre d\'heures' },
-
-    // Tax document
-    '50': { label: 'Revenu fiscal', desc: 'Revenu fiscal de référence' },
-    '51': { label: 'Nombre de parts', desc: 'Nombre de parts fiscales' },
-    '52': { label: 'Année revenus', desc: 'Année des revenus' },
-    '53': { label: 'N° fiscal', desc: 'Numéro fiscal du déclarant' },
-    '54': { label: 'Réf. avis', desc: 'Référence de l\'avis d\'imposition' },
-
-    // Additional common IDs
-    'A1': { label: 'Nom d\'usage', desc: 'Nom d\'usage' },
-    'A2': { label: 'Prénom', desc: 'Premier prénom' },
-    'A3': { label: 'Date de naissance', desc: 'Date de naissance JJ/MM/AAAA' },
-    'A4': { label: 'Lieu de naissance', desc: 'Lieu de naissance' },
-    'A5': { label: 'Adresse', desc: 'Adresse complète' },
-
-    'B1': { label: 'Nom employeur', desc: 'Raison sociale employeur' },
-    'B2': { label: 'SIRET employeur', desc: 'N° SIRET de l\'employeur' },
-    'B3': { label: 'Adresse employeur', desc: 'Adresse de l\'employeur' },
+  const TAGS = {
+    '01':{label:'Ligne identité 1'},'02':{label:'Ligne identité 2'},'03':{label:'Ligne identité 3'},
+    '04':{label:'Ligne identité 4'},'05':{label:'Ligne identité 5'},
+    '06':{label:'Adresse point remise'},'07':{label:'Code postal'},'08':{label:'Ville'},'09':{label:'Pays'},
+    '0A':{label:'Téléphone'},'0B':{label:'Email'},
+    '10':{label:'Adresse L1'},'11':{label:'Adresse L2'},'12':{label:'Adresse L3'},'13':{label:'Adresse L4'},
+    '14':{label:'Adresse L5'},'15':{label:'Adresse L6'},'16':{label:'Adresse L7'},
+    '17':{label:'Qualité/Titre'},'18':{label:'Prénom(s)'},'19':{label:'Nom'},
+    '1A':{label:'Complément nom'},'1B':{label:'Date naissance'},'1C':{label:'Lieu naissance'},
+    '1D':{label:'Sexe'},'1E':{label:'Nationalité'},
+    '20':{label:'Identifiant RH'},'21':{label:'N° Sécu (NIR)'},
+    '22':{label:'Période début'},'23':{label:'Période fin'},'24':{label:'Date paiement'},
+    '25':{label:'Net fiscal'},'26':{label:'Net à payer'},'27':{label:'Cumul net imposable'},
+    '28':{label:'Heures travaillées'},'29':{label:'SIRET employeur'},'2A':{label:'Raison sociale employeur'},
+    '30':{label:'N° facture'},'31':{label:'N° client'},'32':{label:'N° contrat'},
+    '33':{label:'Point de service'},'34':{label:'Montant TTC'},'35':{label:'Date facture'},
+    '36':{label:'Date limite paiement'},'37':{label:'SIREN fournisseur'},'38':{label:'Nom fournisseur'},
+    '39':{label:'Type énergie'},'3A':{label:'Période facturée début'},'3B':{label:'Période facturée fin'},
+    '40':{label:'Revenu fiscal réf.'},'41':{label:'Nombre de parts'},'42':{label:'Année revenus'},
+    '43':{label:'N° fiscal'},'44':{label:'Réf. avis'},'45':{label:'Montant impôt'},
+    '46':{label:'Situation famille'},'47':{label:'Pers. à charge'},
+    '50':{label:'Immatriculation'},'51':{label:'Date immat.'},'52':{label:'Titulaire'},
+    '53':{label:'Marque'},'54':{label:'Modèle'},'55':{label:'N° VIN'},
+    'A1':{label:'Nom d\'usage'},'A2':{label:'Prénom'},'A3':{label:'Date naissance'},'A4':{label:'Lieu naissance'},
+    'B1':{label:'Nom employeur'},'B2':{label:'SIRET employeur'},
   };
-
-  // ─── Render Results ───
-  function renderResults(raw, parsed) {
-    let html = '';
-
-    // Badge
-    if (parsed.isValid) {
-      html += `<div class="result-badge success">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
-        2D-Doc détecté
-      </div>`;
-    } else {
-      html += `<div class="result-badge warning">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M12 9v4M12 17h.01"/></svg>
-        Format non standard
-      </div>`;
-    }
-
-    // Header info
-    if (parsed.header && Object.keys(parsed.header).length > 0) {
-      html += '<div style="margin-bottom:16px">';
-      const h = parsed.header;
-      if (h.version) html += `<div class="field-card" style="margin-bottom:8px">
-        <div class="field-tag">HEADER</div>
-        <div class="field-label">Version: ${h.version} ${h.marker ? '('+h.marker+')' : ''}</div>
-        ${h.caId ? `<div class="field-label">CA: ${h.caId} | Cert: ${h.certId}</div>` : ''}
-        ${h.emissionDate ? `<div class="field-label">Émission: ${h.emissionDate} | Signature: ${h.signatureDate}</div>` : ''}
-        ${h.docTypeId ? `<div class="field-label">Type document: ${h.docTypeId} (${DOC_TYPES[h.docTypeId] || 'inconnu'})</div>` : ''}
-      </div>`;
-      html += '</div>';
-    }
-
-    // Parsed fields
-    if (parsed.fields.length > 0) {
-      html += '<div class="fields-grid">';
-      for (const field of parsed.fields) {
-        let displayValue = field.value;
-
-        // Format monetary values (in centimes)
-        if (field.label.includes('Montant') || field.label.includes('Salaire') || field.label.includes('Revenu')) {
-          const num = parseInt(displayValue, 10);
-          if (!isNaN(num)) {
-            displayValue = (num / 100).toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' });
-          }
-        }
-
-        html += `<div class="field-card">
-          <div class="field-tag">${field.tag}</div>
-          <div class="field-label">${field.label}</div>
-          <div class="field-value">${escapeHtml(displayValue)}</div>
-        </div>`;
-      }
-      html += '</div>';
-    }
-
-    // Raw data
-    html += `<div class="raw-data" style="margin-top:20px">
-      <div class="raw-data-label">Données brutes (${raw.length} caractères)</div>
-      <pre>${escapeHtml(formatRaw(raw))}</pre>
-    </div>`;
-
-    // Signature
-    if (parsed.signature) {
-      html += `<div class="raw-data">
-        <div class="raw-data-label">Signature</div>
-        <pre style="color:var(--warning)">${escapeHtml(parsed.signature.substring(0, 200))}${parsed.signature.length > 200 ? '…' : ''}</pre>
-      </div>`;
-    }
-
-    resultsBody.innerHTML = html;
-  }
 
   const DOC_TYPES = {
-    '00': 'Justificatif de domicile',
-    '01': 'Justificatif de domicile',
-    '02': 'Facture',
-    '03': 'Avis d\'imposition',
-    '04': 'Titre d\'identité',
-    '05': 'Carte grise',
-    '06': 'Diplôme',
-    '07': 'Carte Vitale',
-    '08': 'Relevé d\'identité bancaire',
-    '09': 'Bulletin de salaire',
-    '10': 'Contrat de travail',
-    '11': 'Attestation employeur',
-    'A1': 'Justificatif fiscal',
-    'A2': 'Bulletin de paie',
-    'B1': 'Avis d\'imposition (revenu)',
-    'B2': 'Avis de situation Pôle Emploi',
+    '00':'Justificatif de domicile','01':'Justificatif de domicile','02':'Facture',
+    '03':'Avis d\'imposition','04':'Titre d\'identité','05':'Carte grise',
+    '06':'Diplôme','07':'Carte Vitale','08':'RIB','09':'Bulletin de salaire',
+    '10':'Contrat de travail','11':'Attestation employeur',
   };
 
-  // ─── Utils ───
-  function escapeHtml(str) {
-    return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  // ─── Render ───
+  function renderResults(raw, p) {
+    let h = '';
+    h += p.isValid
+      ? `<div class="result-badge success"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg> 2D-Doc détecté</div>`
+      : `<div class="result-badge warning">⚠ Format non standard</div>`;
+
+    if (p.header.version) {
+      const hd = p.header;
+      h += `<div class="field-card" style="margin-bottom:16px">
+        <div class="field-tag">EN-TÊTE</div>
+        <div class="field-label">Version ${hd.version} ${hd.marker||''}</div>
+        ${hd.caId ? `<div class="field-label">CA: ${hd.caId} — Cert: ${hd.certId}</div>` : ''}
+        ${hd.emissionDate ? `<div class="field-label">Émis: ${hd.emissionDate} — Signé: ${hd.signatureDate}</div>` : ''}
+        ${hd.docTypeId ? `<div class="field-value" style="margin-top:6px">${DOC_TYPES[hd.docTypeId] || 'Type ' + hd.docTypeId}</div>` : ''}
+      </div>`;
+    }
+
+    if (p.fields.length) {
+      h += '<div class="fields-grid">';
+      for (const f of p.fields) {
+        let v = f.value;
+        if (/montant|net|impôt|revenu/i.test(f.label)) {
+          const n = parseInt(v, 10);
+          if (!isNaN(n) && n > 0) v = (n/100).toLocaleString('fr-FR',{style:'currency',currency:'EUR'});
+        }
+        h += `<div class="field-card"><div class="field-tag">${f.tag}</div><div class="field-label">${f.label}</div><div class="field-value">${esc(v)}</div></div>`;
+      }
+      h += '</div>';
+    }
+
+    h += `<div class="raw-data" style="margin-top:20px"><div class="raw-data-label">Brut — ${raw.length} car.</div><pre>${esc(fmtRaw(raw))}</pre></div>`;
+    if (p.signature) h += `<div class="raw-data"><div class="raw-data-label">Signature (${p.signature.length})</div><pre style="color:var(--warning)">${esc(p.signature.substring(0,120))}…</pre></div>`;
+
+    resultsBody.innerHTML = h;
   }
 
-  function formatRaw(str) {
-    // Replace control chars with visible representation
-    return str.replace(/[\x00-\x1F]/g, c => {
-      const code = c.charCodeAt(0);
-      const names = { 0x1D: '⟨GS⟩', 0x1E: '⟨RS⟩', 0x1F: '⟨US⟩', 0x04: '⟨EOT⟩' };
-      return names[code] || `⟨0x${code.toString(16).padStart(2, '0')}⟩`;
+  function esc(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+  function fmtRaw(s) {
+    return s.replace(/[\x00-\x1F]/g, c => {
+      const n = c.charCodeAt(0);
+      return {0x1D:'⟨GS⟩',0x1E:'⟨RS⟩',0x1F:'⟨US⟩',0x04:'⟨EOT⟩'}[n] || `⟨${n.toString(16).padStart(2,'0')}⟩`;
     });
   }
-
-  function setStatus(type, msg) {
+  function setStatus(t, m) {
     statusDot.className = 'status-dot';
-    if (type === 'error') statusDot.classList.add('error');
-    else if (type === 'success') statusDot.classList.add('success');
-    statusMsg.textContent = msg;
+    if (t==='error') statusDot.classList.add('error');
+    statusMsg.textContent = m;
   }
+  function vibrate() { navigator.vibrate?.([100,50,100]); }
 
-  function vibrate() {
-    if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
-  }
-
-  // ─── Torch ───
   async function toggleTorch() {
     if (!stream) return;
     const track = stream.getVideoTracks()[0];
-    const caps = track.getCapabilities?.();
-    if (!caps?.torch) return;
-
+    if (!track.getCapabilities?.()?.torch) return;
     torchOn = !torchOn;
     await track.applyConstraints({ advanced: [{ torch: torchOn }] });
     btnTorch.classList.toggle('active', torchOn);
   }
 
-  // ─── Events ───
   function setupEvents() {
     btnTorch.addEventListener('click', toggleTorch);
-
     btnCapture.addEventListener('click', captureAndDecode);
-
-    fileInput.addEventListener('change', (e) => {
-      const file = e.target.files?.[0];
-      if (file) decodeFromFile(file);
-      e.target.value = '';
-    });
-
-    btnCloseResults.addEventListener('click', () => {
-      resultsPanel.classList.remove('open');
-      setTimeout(() => startScanning(), 300);
-    });
-
-    btnRescan.addEventListener('click', () => {
-      resultsPanel.classList.remove('open');
-      setTimeout(() => startScanning(), 300);
-    });
-
+    fileInput.addEventListener('change', e => { if(e.target.files?.[0]) decodeFromFile(e.target.files[0]); e.target.value=''; });
+    btnCloseResults.addEventListener('click', closeResults);
+    btnRescan.addEventListener('click', closeResults);
     btnCopy.addEventListener('click', () => {
       navigator.clipboard.writeText(lastRawResult).then(() => {
         btnCopy.textContent = 'Copié ✓';
@@ -1159,15 +761,17 @@ const App = (() => {
     });
   }
 
+  function closeResults() {
+    resultsPanel.classList.remove('open');
+    captureCanvas.width = video.videoWidth;
+    captureCanvas.height = video.videoHeight;
+    setTimeout(startScanning, 300);
+  }
+
   return { init };
 })();
 
-// ─── Service Worker Registration ───
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('sw.js').catch(() => {});
-}
-
-// ─── Launch ───
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{});
 document.addEventListener('DOMContentLoaded', App.init);
 </script>
 </body>
