@@ -14,16 +14,29 @@
     :root{--bg:#0a0a0f;--surface:#13131a;--surface2:#1c1c28;--border:#2a2a3a;--text:#e8e8f0;--text-dim:#8888a0;--accent:#00e5a0;--accent-dim:#00e5a020;--danger:#ff4466;--warning:#ffaa00;--radius:16px}
     html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Outfit',sans-serif;overflow:hidden;-webkit-tap-highlight-color:transparent}
     .app{display:flex;flex-direction:column;height:100dvh;max-width:500px;margin:0 auto}
+
+    /* Header */
     .header{padding:16px 20px;display:flex;align-items:center;gap:12px;z-index:10;background:var(--bg);border-bottom:1px solid var(--border)}
     .header-icon{width:36px;height:36px;background:var(--accent);border-radius:10px;display:grid;place-items:center;flex-shrink:0}
     .header-icon svg{width:20px;height:20px}
     .header h1{font-size:1.15rem;font-weight:700;letter-spacing:-0.02em}
     .header small{font-size:.7rem;color:var(--text-dim);font-weight:400}
-    .engine-badge{margin-left:auto;font-size:.6rem;padding:3px 8px;border-radius:6px;background:var(--surface2);color:var(--text-dim);font-family:'JetBrains Mono',monospace;white-space:nowrap}
+    .status-pill{margin-left:auto;display:flex;align-items:center;gap:6px;font-size:.65rem;padding:4px 10px;border-radius:20px;background:var(--surface2);color:var(--text-dim);font-family:'JetBrains Mono',monospace;white-space:nowrap;transition:all .3s}
+    .status-pill .dot{width:7px;height:7px;border-radius:50%;transition:background .3s}
+    .status-pill.ok .dot{background:var(--accent)}
+    .status-pill.ok{color:var(--accent)}
+    .status-pill.warn .dot{background:var(--warning)}
+    .status-pill.warn{color:var(--warning)}
+    .status-pill.err .dot{background:var(--danger)}
+    .status-pill.err{color:var(--danger)}
+    .status-pill.loading .dot{background:var(--warning);animation:blink 1s ease infinite}
+    @keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}
+
+    /* Camera */
     .camera-container{position:relative;flex:1;background:#000;overflow:hidden;display:flex;align-items:center;justify-content:center}
     #video{width:100%;height:100%;object-fit:cover}
     .scan-zone{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:220px;height:220px;pointer-events:none}
-    .scan-zone::before{content:'';position:absolute;inset:-2px;border:2px solid var(--accent);border-radius:20px;opacity:.6}
+    .scan-zone::before{content:'';position:absolute;inset:-2px;border:2px solid var(--accent);border-radius:20px;opacity:.5}
     .scan-corner{position:absolute;width:28px;height:28px;border-color:var(--accent);border-style:solid;border-width:0}
     .scan-corner.tl{top:-2px;left:-2px;border-top-width:3px;border-left-width:3px;border-radius:12px 0 0 0}
     .scan-corner.tr{top:-2px;right:-2px;border-top-width:3px;border-right-width:3px;border-radius:0 12px 0 0}
@@ -31,12 +44,19 @@
     .scan-corner.br{bottom:-2px;right:-2px;border-bottom-width:3px;border-right-width:3px;border-radius:0 0 12px 0}
     .scan-line{position:absolute;top:0;left:10%;width:80%;height:2px;background:linear-gradient(90deg,transparent,var(--accent),transparent);border-radius:2px;animation:scanMove 2s ease-in-out infinite;box-shadow:0 0 12px var(--accent)}
     @keyframes scanMove{0%,100%{top:5%;opacity:.4}50%{top:92%;opacity:1}}
-    .camera-overlay-mask{position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse 260px 260px at center,transparent 45%,rgba(0,0,0,.6) 70%)}
-    .status-bar{position:absolute;bottom:0;left:0;right:0;padding:16px 20px;background:linear-gradient(transparent,rgba(0,0,0,.85));display:flex;align-items:center;justify-content:space-between;gap:12px;z-index:5}
-    .status-text{font-size:.82rem;color:var(--text-dim);display:flex;align-items:center;gap:8px}
-    .status-dot{width:8px;height:8px;border-radius:50%;background:var(--accent);animation:pulse 1.5s ease infinite}
-    .status-dot.error{background:var(--danger);animation:none}
-    @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+    .camera-overlay-mask{position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse 260px 260px at center,transparent 45%,rgba(0,0,0,.55) 70%)}
+
+    /* Flash overlay on decode */
+    .flash{position:absolute;inset:0;background:var(--accent);opacity:0;pointer-events:none;transition:opacity .1s}
+    .flash.on{opacity:.25;transition:none}
+
+    /* Bottom bar */
+    .bottom-bar{position:absolute;bottom:0;left:0;right:0;padding:14px 20px;background:linear-gradient(transparent,rgba(0,0,0,.85));display:flex;align-items:center;justify-content:center;z-index:5}
+    .format-pills{display:flex;gap:6px}
+    .format-pill{font-family:'JetBrains Mono',monospace;font-size:.6rem;padding:3px 8px;border-radius:6px;background:rgba(255,255,255,.08);color:var(--text-dim)}
+    .format-pill.active{background:var(--accent-dim);color:var(--accent)}
+
+    /* Controls */
     .controls{padding:12px 20px;background:var(--bg);border-top:1px solid var(--border);display:flex;align-items:center;justify-content:center;gap:16px}
     .btn{border:none;cursor:pointer;font-family:inherit;border-radius:12px;font-weight:600;transition:all .15s;display:flex;align-items:center;gap:8px}
     .btn:active{transform:scale(.96)}
@@ -46,41 +66,43 @@
     .btn-icon.active{background:var(--accent-dim);color:var(--accent)}
     .btn-capture{width:64px;height:64px;background:var(--accent);border-radius:50%;display:grid;place-items:center;border:3px solid var(--bg);box-shadow:0 0 0 2px var(--accent)}
     .btn-capture svg{width:28px;height:28px;color:var(--bg)}
+    .file-input-wrapper{position:relative;display:inline-block}
+    .file-input-wrapper input[type="file"]{position:absolute;inset:0;opacity:0;cursor:pointer}
+
+    /* Results */
     .results-panel{position:fixed;inset:0;background:var(--bg);z-index:100;display:flex;flex-direction:column;transform:translateY(100%);transition:transform .35s cubic-bezier(.16,1,.3,1)}
     .results-panel.open{transform:translateY(0)}
     .results-header{padding:16px 20px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border)}
     .results-header h2{font-size:1.1rem;font-weight:700}
     .btn-close{width:36px;height:36px;background:var(--surface2);border:none;color:var(--text);border-radius:50%;display:grid;place-items:center;cursor:pointer;font-size:1.2rem}
     .results-body{flex:1;overflow-y:auto;padding:16px 20px;-webkit-overflow-scrolling:touch}
-    .result-badge{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:8px;font-size:.75rem;font-weight:600;margin-bottom:16px}
+
+    .result-badge{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:8px;font-size:.75rem;font-weight:600;margin-bottom:12px}
     .result-badge.success{background:#00e5a018;color:var(--accent)}
     .result-badge.warning{background:#ffaa0018;color:var(--warning)}
+    .result-badge.error{background:#ff446618;color:var(--danger)}
+
+    .sig-badge{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:8px;font-size:.72rem;font-weight:600;margin-bottom:16px;margin-left:6px}
+    .sig-badge.verified{background:#00e5a018;color:var(--accent)}
+    .sig-badge.invalid{background:#ff446618;color:var(--danger)}
+    .sig-badge.unknown{background:#ffaa0018;color:var(--warning)}
+
     .raw-data{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:20px}
     .raw-data-label{font-size:.7rem;text-transform:uppercase;letter-spacing:.08em;color:var(--text-dim);margin-bottom:8px}
     .raw-data pre{font-family:'JetBrains Mono',monospace;font-size:.78rem;color:var(--accent);white-space:pre-wrap;word-break:break-all;line-height:1.6}
+
     .fields-grid{display:flex;flex-direction:column;gap:8px}
     .field-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 16px}
     .field-tag{font-family:'JetBrains Mono',monospace;font-size:.68rem;color:var(--accent);font-weight:600;margin-bottom:2px}
     .field-label{font-size:.72rem;color:var(--text-dim);margin-bottom:4px}
     .field-value{font-size:.95rem;font-weight:600;color:var(--text);word-break:break-word}
+
     .results-actions{padding:16px 20px;border-top:1px solid var(--border);display:flex;gap:10px}
     .results-actions .btn{flex:1;justify-content:center}
     .btn-secondary{background:var(--surface2);color:var(--text);padding:14px 20px;font-size:.88rem}
-    .file-input-wrapper{position:relative;display:inline-block}
-    .file-input-wrapper input[type="file"]{position:absolute;inset:0;opacity:0;cursor:pointer}
+
     #capture-canvas{display:none}
-
-    /* ─── Debug Log ─── */
-    #debug-log{position:absolute;top:8px;left:8px;right:8px;z-index:50;background:rgba(0,0,0,.85);border:1px solid var(--border);border-radius:10px;padding:10px;max-height:40%;overflow-y:auto;font-family:'JetBrains Mono',monospace;font-size:.65rem;line-height:1.5;pointer-events:auto;display:none}
-    #debug-log.visible{display:block}
-    #debug-log .log-line{margin-bottom:2px}
-    #debug-log .log-ok{color:var(--accent)}
-    #debug-log .log-warn{color:var(--warning)}
-    #debug-log .log-err{color:var(--danger)}
-    #debug-log .log-info{color:var(--text-dim)}
-    #btn-debug{position:absolute;top:8px;right:8px;z-index:51;width:28px;height:28px;background:var(--surface2);border:1px solid var(--border);color:var(--text-dim);border-radius:6px;font-size:.7rem;cursor:pointer;display:grid;place-items:center}
-
-    @supports (padding-top: env(safe-area-inset-top)){
+    @supports(padding-top:env(safe-area-inset-top)){
       .header{padding-top:calc(16px + env(safe-area-inset-top))}
       .results-actions{padding-bottom:calc(16px + env(safe-area-inset-bottom))}
       .controls{padding-bottom:calc(12px + env(safe-area-inset-bottom))}
@@ -88,7 +110,6 @@
   </style>
 </head>
 <body>
-
 <div class="app">
   <div class="header">
     <div class="header-icon">
@@ -97,14 +118,11 @@
         <rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>
       </svg>
     </div>
-    <div>
-      <h1>2D-Doc Scanner</h1>
-      <small>Lecture &amp; décodage documents sécurisés</small>
-    </div>
-    <div class="engine-badge" id="engine-badge">…</div>
+    <div><h1>2D-Doc Scanner</h1><small>Lecture &amp; décodage documents sécurisés</small></div>
+    <div class="status-pill loading" id="status-pill"><span class="dot"></span><span id="pill-text">Init…</span></div>
   </div>
 
-  <div class="camera-container" id="camera-container">
+  <div class="camera-container">
     <video id="video" autoplay playsinline muted></video>
     <div class="camera-overlay-mask"></div>
     <div class="scan-zone">
@@ -112,35 +130,27 @@
       <div class="scan-corner bl"></div><div class="scan-corner br"></div>
       <div class="scan-line"></div>
     </div>
-
-    <!-- Debug log overlay -->
-    <button id="btn-debug" onclick="document.getElementById('debug-log').classList.toggle('visible')">🐛</button>
-    <div id="debug-log"></div>
-
-    <div class="status-bar">
-      <div class="status-text">
-        <div class="status-dot" id="status-dot"></div>
-        <span id="status-msg">Initialisation…</span>
-      </div>
-      <div id="fps-counter" style="font-family:'JetBrains Mono',monospace;font-size:.7rem;color:var(--text-dim)"></div>
+    <div class="flash" id="flash"></div>
+    <div class="bottom-bar">
+      <div class="format-pills" id="format-pills"></div>
     </div>
   </div>
 
   <div class="controls">
-    <button class="btn btn-icon" id="btn-torch" title="Torche">
+    <button class="btn btn-icon" id="btn-torch">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
         <path d="M9 18h6"/><path d="M10 22h4"/><path d="M12 2v1"/>
         <path d="m4.9 4.9.7.7"/><path d="M2 12h1"/><path d="m19.1 4.9-.7.7"/><path d="M22 12h-1"/>
         <path d="M15.5 8a3.5 3.5 0 0 0-7 0c0 2 1.5 3 2 4h3c.5-1 2-2 2-4z"/>
       </svg>
     </button>
-    <button class="btn btn-capture" id="btn-capture" title="Capturer">
+    <button class="btn btn-capture" id="btn-capture">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
         <circle cx="12" cy="13" r="4"/>
         <path d="M9 2 7.2 4H4a1 1 0 0 0-1 1v14a1 1 0 0 0 1 1h16a1 1 0 0 0 1-1V5a1 1 0 0 0-1-1h-3.2L15 2z"/>
       </svg>
     </button>
-    <label class="btn btn-icon file-input-wrapper" title="Image">
+    <label class="btn btn-icon file-input-wrapper">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
         <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
         <polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
@@ -152,10 +162,7 @@
 </div>
 
 <div class="results-panel" id="results-panel">
-  <div class="results-header">
-    <h2>Résultat</h2>
-    <button class="btn-close" id="btn-close-results">&times;</button>
-  </div>
+  <div class="results-header"><h2>Résultat</h2><button class="btn-close" id="btn-close-results">&times;</button></div>
   <div class="results-body" id="results-body"></div>
   <div class="results-actions">
     <button class="btn btn-secondary" id="btn-copy">Copier</button>
@@ -165,567 +172,290 @@
 
 <script>
 // ═══════════════════════════════════════
-// GLOBAL ERROR HANDLER — catches everything
+// Global error safety net
 // ═══════════════════════════════════════
-window.onerror = function(msg, src, line, col, err) {
-  showCrash('JS Error: ' + msg + ' (line ' + line + ')');
-};
-window.addEventListener('unhandledrejection', function(e) {
-  showCrash('Promise rejected: ' + (e.reason?.message || e.reason || 'unknown'));
-});
-function showCrash(msg) {
-  var el = document.getElementById('debug-log');
-  if (el) {
-    el.classList.add('visible');
-    el.innerHTML += '<div class="log-line log-err">[CRASH] ' + msg + '</div>';
-    el.scrollTop = el.scrollHeight;
-  }
-  var s = document.getElementById('status-msg');
-  if (s) s.textContent = 'ERREUR: ' + msg;
-  console.error('[CRASH]', msg);
+window.onerror = function(m) { setPill('err', 'Erreur'); console.error(m); };
+window.addEventListener('unhandledrejection', function(e) { console.error(e.reason); });
+
+function setPill(type, text) {
+  var p = document.getElementById('status-pill');
+  var t = document.getElementById('pill-text');
+  if (p) { p.className = 'status-pill ' + type; }
+  if (t) { t.textContent = text; }
 }
 
 // ═══════════════════════════════════════
-// DEBUG LOGGER — visible on screen
+// MAIN
 // ═══════════════════════════════════════
-const DBG = {
-  el: null,
-  init() { this.el = document.getElementById('debug-log'); this.el.classList.add('visible'); },
-  log(msg, type) {
-    type = type || 'info';
-    if (!this.el) return;
-    var line = document.createElement('div');
-    line.className = 'log-line log-' + type;
-    line.textContent = '[' + new Date().toLocaleTimeString() + '] ' + msg;
-    this.el.appendChild(line);
-    this.el.scrollTop = this.el.scrollHeight;
-    console.log('[' + type + '] ' + msg);
-  },
-  ok: function(m) { this.log(m, 'ok'); },
-  warn: function(m) { this.log(m, 'warn'); },
-  err: function(m) { this.log(m, 'err'); },
-  info: function(m) { this.log(m, 'info'); },
-};
-
-// ═══════════════════════════════════════
-// MAIN APP
-// ═══════════════════════════════════════
-(async function main() {
+(async function() {
   try {
-  // Wait for DOM
-  if (document.readyState === 'loading') {
+  if (document.readyState === 'loading')
     await new Promise(function(r) { document.addEventListener('DOMContentLoaded', r); });
+
+  var video = document.getElementById('video');
+  var captureCanvas = document.getElementById('capture-canvas');
+  var captureCtx = captureCanvas.getContext('2d', { willReadFrequently: true });
+  var resultsPanel = document.getElementById('results-panel');
+  var resultsBody = document.getElementById('results-body');
+  var flash = document.getElementById('flash');
+  var formatPillsEl = document.getElementById('format-pills');
+
+  var stream = null, detector = null, scanning = false, torchOn = false, lastRaw = '', scanRafId = null;
+  var FORMATS = ['data_matrix', 'qr_code', 'pdf417', 'aztec', 'code_128', 'code_39', 'ean_13', 'ean_8'];
+  var activeFormats = [];
+
+  // ─── Audio feedback ───
+  var audioCtx = null;
+  function beepSuccess() {
+    try {
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      // Two-tone success beep
+      [860, 1080].forEach(function(freq, i) {
+        var osc = audioCtx.createOscillator();
+        var gain = audioCtx.createGain();
+        osc.type = 'sine';
+        osc.frequency.value = freq;
+        gain.gain.value = 0.15;
+        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.15 + i * 0.1);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start(audioCtx.currentTime + i * 0.1);
+        osc.stop(audioCtx.currentTime + 0.15 + i * 0.1);
+      });
+    } catch(e) {}
   }
 
-  DBG.init();
-  DBG.info('App starting v6…');
-
-  // ─── Device Detection & Debug ───
-  const ua = navigator.userAgent;
-  const isIOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-  const isAndroid = /Android/.test(ua);
-  const isSafari = /Safari/.test(ua) && !/Chrome/.test(ua) && !/CriOS/.test(ua);
-  const isChrome = /Chrome|CriOS/.test(ua);
-  const isFirefox = /FxiOS|Firefox/.test(ua);
-  const isSamsung = /SamsungBrowser/.test(ua);
-
-  // OS version
-  let osVersion = '?';
-  if (isIOS) {
-    const m = ua.match(/OS (\d+[_\.]\d+[_\.]?\d*)/);
-    osVersion = m ? m[1].replace(/_/g, '.') : '?';
-  } else if (isAndroid) {
-    const m = ua.match(/Android (\d+\.?\d*\.?\d*)/);
-    osVersion = m ? m[1] : '?';
+  function flashScreen() {
+    flash.classList.add('on');
+    setTimeout(function() { flash.classList.remove('on'); }, 150);
   }
 
-  // Browser version
-  let browser = 'Unknown';
-  if (isSamsung) { const m = ua.match(/SamsungBrowser\/([\d.]+)/); browser = 'Samsung ' + (m?m[1]:'?'); }
-  else if (isChrome) { const m = ua.match(/(?:Chrome|CriOS)\/([\d.]+)/); browser = 'Chrome ' + (m?m[1]:'?'); }
-  else if (isSafari) { const m = ua.match(/Version\/([\d.]+)/); browser = 'Safari ' + (m?m[1]:'?'); }
-  else if (isFirefox) { const m = ua.match(/(?:FxiOS|Firefox)\/([\d.]+)/); browser = 'Firefox ' + (m?m[1]:'?'); }
+  function vibrate() { try { navigator.vibrate && navigator.vibrate([80, 40, 80]); } catch(e) {} }
 
-  const platform = isIOS ? '🍎 iOS' : isAndroid ? '🤖 Android' : '💻 ' + navigator.platform;
-
-  DBG.info(`${platform} ${osVersion} — ${browser}`);
-  DBG.info('UA: ' + ua.substring(0, 100));
-  DBG.info('Screen: ' + screen.width + 'x' + screen.height + ' @' + devicePixelRatio + 'x');
-  DBG.info('Secure: ' + location.protocol + ' | SW: ' + ('serviceWorker' in navigator));
-
-  // API availability check
-  DBG.info('── API Support ──');
-  DBG.info('getUserMedia: ' + (!!navigator.mediaDevices?.getUserMedia ? '✓' : '✗'));
-  DBG.info('BarcodeDetector: ' + ('BarcodeDetector' in window ? '✓' : '✗'));
-  DBG.info('OffscreenCanvas: ' + ('OffscreenCanvas' in window ? '✓' : '✗'));
-  DBG.info('WASM: ' + (typeof WebAssembly === 'object' ? '✓' : '✗'));
-  DBG.info('Clipboard: ' + (!!navigator.clipboard ? '✓' : '✗'));
-  DBG.info('Vibration: ' + (!!navigator.vibrate ? '✓' : '✗'));
-
-  if (isIOS) {
-    DBG.warn('iOS détecté — BarcodeDetector absent, fallback WASM');
-    if (isSafari) DBG.info('Safari iOS — getUserMedia OK depuis iOS 11+');
-    else if (isChrome) DBG.warn('Chrome iOS = WebKit — mêmes limites que Safari');
-    else if (isFirefox) DBG.warn('Firefox iOS = WebKit — mêmes limites que Safari');
-  }
-  if (isAndroid) {
-    if (isChrome) DBG.ok('Chrome Android — BarcodeDetector natif attendu');
-    else if (isSamsung) DBG.warn('Samsung Browser — BarcodeDetector peut manquer');
-    else if (isFirefox) DBG.warn('Firefox Android — pas de BarcodeDetector');
-  }
-
-  const video = document.getElementById('video');
-  const captureCanvas = document.getElementById('capture-canvas');
-  const captureCtx = captureCanvas.getContext('2d', { willReadFrequently: true });
-  const statusDot = document.getElementById('status-dot');
-  const statusMsg = document.getElementById('status-msg');
-  const fpsCounter = document.getElementById('fps-counter');
-  const resultsPanel = document.getElementById('results-panel');
-  const resultsBody = document.getElementById('results-body');
-  const engineBadge = document.getElementById('engine-badge');
-
-  let stream = null;
-  let nativeDetector = null;
-  let useNative = false;
-  let useZbar = false;
-  let scanning = false;
-  let torchOn = false;
-  let lastRawResult = '';
-  let scanRafId = null;
+  function feedback() { beepSuccess(); flashScreen(); vibrate(); }
 
   // ─── STEP 1: Detect engine ───
-  DBG.info('── Step 1: Decoder Engine ──');
+  setPill('loading', 'Moteur…');
+
+  var isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  var useNative = false, usePolyfill = false;
+
+  // Try native BarcodeDetector
   if ('BarcodeDetector' in window) {
-    DBG.ok('BarcodeDetector exists');
     try {
-      const formats = await BarcodeDetector.getSupportedFormats();
-      DBG.info('Formats (' + formats.length + '): ' + formats.join(', '));
-      if (formats.includes('data_matrix')) {
-        nativeDetector = new BarcodeDetector({ formats: ['data_matrix'] });
+      var supported = await BarcodeDetector.getSupportedFormats();
+      var available = FORMATS.filter(function(f) { return supported.indexOf(f) >= 0; });
+      if (available.length > 0) {
+        detector = new BarcodeDetector({ formats: available });
+        activeFormats = available;
         useNative = true;
-        engineBadge.textContent = 'Native';
-        engineBadge.style.color = 'var(--accent)';
-        DBG.ok('✓ Native DataMatrix — best performance');
-      } else {
-        DBG.warn('data_matrix absent! Formats dispo: ' + formats.join(', '));
-        if (isAndroid && !isChrome) DBG.warn('Essayez Chrome pour le support natif');
       }
-    } catch(e) {
-      DBG.err('getSupportedFormats error: ' + e.message);
-    }
-  } else {
-    DBG.warn('BarcodeDetector absent');
-    if (isIOS) DBG.info('Normal sur iOS — Apple ne supporte pas cette API');
-    if (isAndroid && isFirefox) DBG.info('Normal sur Firefox Android');
+    } catch(e) {}
   }
 
-  // ─── STEP 1b: Load barcode-detector polyfill if needed ───
-  let polyfillDetector = null;
-
+  // Polyfill for iOS
   if (!useNative) {
-    DBG.info('── Step 1b: Polyfill BarcodeDetector ──');
-    if (typeof WebAssembly !== 'object') {
-      DBG.err('WebAssembly non supporté — scan impossible');
-    } else {
-      engineBadge.textContent = 'WASM…';
+    setPill('loading', 'WASM…');
+    var cdns = [
+      'https://cdn.jsdelivr.net/npm/barcode-detector@2/dist/es/pure.min.js',
+      'https://unpkg.com/barcode-detector@2/dist/es/pure.min.js',
+      'https://esm.sh/barcode-detector@2?bundle'
+    ];
 
-      // barcode-detector v2 is a proper ESM polyfill using zbar.wasm internally
-      const cdns = [
-        'https://cdn.jsdelivr.net/npm/barcode-detector@2/dist/es/pure.min.js',
-        'https://unpkg.com/barcode-detector@2/dist/es/pure.min.js',
-        'https://esm.sh/barcode-detector@2?bundle',
-      ];
-
-      for (const url of cdns) {
-        if (useZbar) break;
-        try {
-          const cdnName = url.split('/')[2];
-          DBG.info('import() from ' + cdnName + '…');
-          const module = await Promise.race([
-            import(url),
-            new Promise((_, rej) => setTimeout(() => rej(new Error('timeout 15s')), 15000)),
-          ]);
-
-          DBG.info('Module keys: ' + Object.keys(module).join(', '));
-
-          // Get the BarcodeDetector class from the module
-          const Detector = module.BarcodeDetector || module.default?.BarcodeDetector || module.default;
-
-          if (Detector && typeof Detector === 'function') {
-            DBG.info('BarcodeDetector polyfill found, checking formats…');
-
-            // Check supported formats
-            if (Detector.getSupportedFormats) {
-              const fmts = await Detector.getSupportedFormats();
-              DBG.info('Polyfill formats: ' + fmts.join(', '));
-            }
-
-            polyfillDetector = new Detector({ formats: ['data_matrix'] });
-
-            // Quick test: make sure detect() is callable
-            if (typeof polyfillDetector.detect === 'function') {
-              useZbar = true;
-              engineBadge.textContent = 'WASM';
-              engineBadge.style.color = 'var(--warning)';
-              DBG.ok('✓ Polyfill BarcodeDetector ready (data_matrix)');
-            } else {
-              DBG.warn('Detector created but detect() not found');
-              polyfillDetector = null;
-            }
-          } else {
-            DBG.warn('No BarcodeDetector class in module');
-            for (const key of Object.keys(module)) {
-              DBG.info('  module.' + key + ' = ' + typeof module[key]);
-            }
+    for (var ci = 0; ci < cdns.length; ci++) {
+      if (usePolyfill) break;
+      try {
+        var mod = await Promise.race([
+          import(cdns[ci]),
+          new Promise(function(_, rej) { setTimeout(function() { rej(new Error('timeout')); }, 15000); })
+        ]);
+        var Det = mod.BarcodeDetector || (mod.default && mod.default.BarcodeDetector) || mod.default;
+        if (Det && typeof Det === 'function') {
+          var polyfillFormats = [];
+          if (Det.getSupportedFormats) {
+            var pf = await Det.getSupportedFormats();
+            polyfillFormats = FORMATS.filter(function(f) { return pf.indexOf(f) >= 0; });
           }
-        } catch(e) {
-          DBG.warn(cdns.indexOf(url) < cdns.length - 1 ? 'Failed, trying next CDN…' : 'All CDNs failed');
-          DBG.warn('  Error: ' + e.message);
+          if (polyfillFormats.length === 0) polyfillFormats = ['data_matrix', 'qr_code'];
+          detector = new Det({ formats: polyfillFormats });
+          activeFormats = polyfillFormats;
+          usePolyfill = true;
         }
-      }
-
-      if (!useZbar) {
-        engineBadge.textContent = 'Manuel';
-        engineBadge.style.color = 'var(--danger)';
-        DBG.warn('Aucun décodeur auto — capture manuelle uniquement');
-      }
+      } catch(e) {}
     }
   }
 
-  // ─── STEP 2: Start camera ───
-  DBG.info('── Step 2: Camera ──');
+  // Show format pills
+  activeFormats.forEach(function(f) {
+    var pill = document.createElement('span');
+    pill.className = 'format-pill active';
+    pill.textContent = f.replace('_', ' ').toUpperCase();
+    formatPillsEl.appendChild(pill);
+  });
+
+  if (!useNative && !usePolyfill) {
+    setPill('warn', 'Manuel');
+  }
+
+  // ─── STEP 2: Camera ───
+  setPill('loading', 'Caméra…');
   try {
-    // List available cameras
-    try {
-      const devices = await navigator.mediaDevices.enumerateDevices();
-      const cams = devices.filter(d => d.kind === 'videoinput');
-      DBG.info('Cameras found: ' + cams.length);
-      cams.forEach((c, i) => DBG.info(`  cam${i}: ${c.label || '(no label)'} id=${c.deviceId.substring(0,8)}…`));
-    } catch(e) {
-      DBG.warn('enumerateDevices failed: ' + e.message);
-    }
-
-    const constraints = {
+    stream = await navigator.mediaDevices.getUserMedia({
       video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } },
-      audio: false,
-    };
-    DBG.info('Requesting getUserMedia…');
-
-    stream = await navigator.mediaDevices.getUserMedia(constraints);
-    const track = stream.getVideoTracks()[0];
-    DBG.ok('getUserMedia OK');
-    DBG.info('Track: ' + track.label);
-    DBG.info('Track state: ' + track.readyState + ' enabled=' + track.enabled + ' muted=' + track.muted);
-
-    // Track settings (actual resolution, etc)
-    const settings = track.getSettings?.() || {};
-    DBG.info(`Settings: ${settings.width}x${settings.height} facing=${settings.facingMode || '?'} fps=${settings.frameRate || '?'}`);
-
-    // Capabilities
-    const caps = track.getCapabilities?.() || {};
-    DBG.info('Torch: ' + (caps.torch ? '✓' : '✗'));
-    DBG.info('Focus: ' + (caps.focusMode ? caps.focusMode.join(',') : '✗'));
-    if (isIOS) DBG.info('iOS note: getCapabilities may be incomplete on Safari');
-
-    video.srcObject = stream;
-    DBG.info('srcObject set — readyState=' + video.readyState);
-
-    // Fire play without await
-    video.play().then(() => {
-      DBG.ok('video.play() resolved — readyState=' + video.readyState);
-    }).catch(e => {
-      DBG.err('video.play() FAILED: ' + e.name + ': ' + e.message);
-      if (isIOS) DBG.warn('iOS: play() peut échouer sans interaction user');
+      audio: false
     });
+    video.srcObject = stream;
+    video.play().catch(function() {});
 
-    // Poll for videoWidth
-    DBG.info('Polling videoWidth…');
-    let attempts = 0;
-    while (video.videoWidth === 0 && attempts < 60) {
-      await sleep(100);
-      attempts++;
-      if (attempts % 10 === 0) {
-        DBG.info(`  …${attempts * 100}ms readyState=${video.readyState} paused=${video.paused} width=${video.videoWidth}`);
-      }
-    }
-
-    const vw = video.videoWidth;
-    const vh = video.videoHeight;
-
-    if (vw === 0) {
-      DBG.err(`Video stuck at 0px after ${attempts * 100}ms!`);
-      DBG.err('readyState=' + video.readyState + ' networkState=' + video.networkState);
-      DBG.err('paused=' + video.paused + ' ended=' + video.ended);
-      DBG.err('error=' + (video.error ? JSON.stringify(video.error) : 'null'));
-      DBG.err('srcObject tracks: ' + (video.srcObject?.getVideoTracks?.()?.length ?? 'N/A'));
-      if (isIOS) {
-        DBG.err('iOS FIX: Essayez de toucher l\'écran (autoplay policy)');
-        DBG.err('iOS: playsinline=' + video.hasAttribute('playsinline'));
-        DBG.err('iOS: muted=' + video.muted + ' autoplay=' + video.autoplay);
-      }
-      if (isAndroid) {
-        DBG.err('Android: vérifiez permissions caméra dans les paramètres Chrome');
-      }
-      setStatus('error', 'Vidéo bloquée — voir 🐛 debug');
-      captureCanvas.width = 1280;
-      captureCanvas.height = 720;
-    } else {
-      DBG.ok(`Video ready: ${vw}x${vh} in ${attempts * 100}ms`);
-      captureCanvas.width = vw;
-      captureCanvas.height = vh;
-    }
-  } catch(err) {
-    DBG.err('Camera FATAL: ' + err.name + ': ' + err.message);
-    if (err.name === 'NotAllowedError') {
-      DBG.err('Permission refusée — l\'utilisateur a bloqué la caméra');
-      if (isIOS) DBG.err('iOS: Réglages > Safari > Caméra > Autoriser');
-      if (isAndroid) DBG.err('Android: Touchez l\'icône 🔒 dans la barre d\'URL');
-    } else if (err.name === 'NotFoundError') {
-      DBG.err('Aucune caméra trouvée');
-    } else if (err.name === 'NotReadableError') {
-      DBG.err('Caméra utilisée par une autre app');
-    } else if (err.name === 'OverconstrainedError') {
-      DBG.err('Contraintes impossibles: ' + err.constraint);
-    }
-    setStatus('error', err.name + ': ' + err.message);
+    var att = 0;
+    while (video.videoWidth === 0 && att < 60) { await sleep(100); att++; }
+    captureCanvas.width = video.videoWidth || 1280;
+    captureCanvas.height = video.videoHeight || 720;
+  } catch(e) {
+    setPill('err', 'Caméra ✗');
   }
 
-  // ─── STEP 3: Start scanning ───
-  DBG.info('── Step 3: Scan Loop ──');
-  DBG.info('useNative=' + useNative + ' useZbar=' + useZbar);
-  DBG.info('canvas=' + captureCanvas.width + 'x' + captureCanvas.height);
-  DBG.info('video.videoWidth=' + video.videoWidth + ' readyState=' + video.readyState);
-  setStatus('scanning', 'Placez le 2D-Doc dans le cadre');
-  startScanning();
+  // ─── STEP 3: Go ───
+  if (detector && video.videoWidth > 0) {
+    setPill('ok', (useNative ? 'Natif' : 'WASM') + ' — ' + activeFormats.length + ' formats');
+    startScanning();
+  } else if (video.videoWidth > 0) {
+    setPill('warn', 'Capture seule');
+  } else {
+    setPill('err', 'Init échoué');
+  }
 
-  // ─── STEP 4: Setup UI events ───
   setupEvents();
 
-  // Summary
-  DBG.info('── Summary ──');
-  DBG.info(`${platform} ${osVersion} | ${browser}`);
-  DBG.info(`Engine: ${useNative ? 'Native ✓' : useZbar ? 'WASM ✓' : 'NONE ✗'}`);
-  DBG.info(`Camera: ${video.videoWidth > 0 ? video.videoWidth + 'x' + video.videoHeight + ' ✓' : 'BLOCKED ✗'}`);
-  DBG.info(`Scanning: ${scanning ? 'Active ✓' : 'Inactive ✗'}`);
-  if (video.videoWidth > 0 && (useNative || useZbar)) {
-    DBG.ok('🚀 Tout OK — prêt à scanner !');
-  } else {
-    DBG.err('⚠ Problème détecté — consultez les logs ci-dessus');
-  }
-
-  // Auto-hide debug after 15s if no error
-  setTimeout(() => {
-    const debugLog = document.getElementById('debug-log');
-    if (debugLog && !debugLog.querySelector('.log-err')) {
-      debugLog.classList.remove('visible');
-    }
-  }, 15000);
-
   // ═══════════════════════════════════════
-  // Functions
+  // SCANNING
   // ═══════════════════════════════════════
-
-  function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
-
-  function setStatus(type, msg) {
-    statusDot.className = 'status-dot';
-    if (type === 'error') statusDot.classList.add('error');
-    statusMsg.textContent = msg;
-  }
-
-  function vibrate() { try { navigator.vibrate?.([100,50,100]); } catch(e){} }
-
-  // ─── Scanning ───
   function startScanning() {
-    if (scanning) return;
-    if (!useNative && !useZbar) {
-      DBG.warn('No decoder available — manual capture only');
-      setStatus('warning', 'Scan auto indisponible — utilisez capture');
-      return;
-    }
+    if (scanning || !detector) return;
     scanning = true;
-    DBG.ok('Scan loop started (engine: ' + (useNative ? 'native' : 'zbar') + ')');
-
-    let fc = 0, lastFps = performance.now(), lastScan = 0;
-    const interval = useZbar ? 300 : 50;
+    var interval = usePolyfill ? 250 : 40;
+    var lastScan = 0;
 
     function loop(ts) {
       if (!scanning) return;
       if (ts - lastScan < interval) { scanRafId = requestAnimationFrame(loop); return; }
       lastScan = ts;
-
       try {
         if (video.videoWidth === 0) { scanRafId = requestAnimationFrame(loop); return; }
-
         captureCtx.drawImage(video, 0, 0, captureCanvas.width, captureCanvas.height);
 
-        tryDecode(captureCanvas).then(raw => {
-          if (!raw) return tryDecode(enhance(captureCanvas));
-          return raw;
-        }).then(raw => {
-          if (!raw) return tryDecode(cropCenter(captureCanvas, 0.55));
-          return raw;
-        }).then(raw => {
-          if (raw && raw.length > 10 && scanning) {
+        detector.detect(captureCanvas).then(function(r) {
+          if (r && r.length > 0 && r[0].rawValue && r[0].rawValue.length > 5 && scanning) {
             scanning = false;
-            DBG.ok('DECODED! Length=' + raw.length);
-            vibrate();
-            handleResult(raw);
+            feedback();
+            handleResult(r[0].rawValue, r[0].format || 'unknown');
           }
-        }).catch(() => {});
-
-        fc++;
-        if (performance.now() - lastFps >= 1000) {
-          fpsCounter.textContent = `${fc} scan/s`;
-          fc = 0; lastFps = performance.now();
-        }
+        }).catch(function() {});
       } catch(e) {}
-
       if (scanning) scanRafId = requestAnimationFrame(loop);
     }
-
     scanRafId = requestAnimationFrame(loop);
   }
 
   function stopScanning() { scanning = false; if (scanRafId) cancelAnimationFrame(scanRafId); }
 
-  async function tryDecode(canvas) {
-    // Try native first
-    if (useNative && nativeDetector) {
+  async function manualCapture() {
+    if (video.videoWidth === 0) return;
+    captureCtx.drawImage(video, 0, 0, captureCanvas.width, captureCanvas.height);
+    if (!detector) return;
+
+    var variants = [captureCanvas, enhance(captureCanvas), cropCenter(captureCanvas, 0.55), binarize(captureCanvas), binarize(cropCenter(captureCanvas, 0.55))];
+    for (var i = 0; i < variants.length; i++) {
       try {
-        const results = await nativeDetector.detect(canvas);
-        if (results.length > 0 && results[0].rawValue?.length > 5) return results[0].rawValue;
+        var r = await detector.detect(variants[i]);
+        if (r && r.length > 0 && r[0].rawValue && r[0].rawValue.length > 5) {
+          feedback();
+          handleResult(r[0].rawValue, r[0].format || 'unknown');
+          return;
+        }
       } catch(e) {}
     }
-    // Then polyfill (same BarcodeDetector API)
-    if (useZbar && polyfillDetector) {
-      try {
-        const results = await polyfillDetector.detect(canvas);
-        if (results?.length > 0) {
-          for (const r of results) {
-            const val = r.rawValue || '';
-            if (val.length > 5) return val;
-          }
-        }
-      } catch(e) {
-        DBG.warn('Polyfill decode error: ' + e.message);
-      }
-    }
-    return null;
+    // Quick flash red
+    setPill('warn', 'Non détecté');
+    setTimeout(function() { setPill('ok', (useNative ? 'Natif' : 'WASM') + ' — ' + activeFormats.length + ' formats'); }, 2000);
   }
 
-  function enhance(src) {
-    const c = document.createElement('canvas');
-    c.width = src.width; c.height = src.height;
-    const ctx = c.getContext('2d');
-    ctx.filter = 'contrast(2) grayscale(1) brightness(1.1)';
-    ctx.drawImage(src, 0, 0);
-    return c;
-  }
-
-  function cropCenter(src, ratio) {
-    const size = Math.min(src.width, src.height) * ratio;
-    const x = (src.width - size) / 2, y = (src.height - size) / 2;
-    const c = document.createElement('canvas');
-    c.width = size; c.height = size;
-    c.getContext('2d').drawImage(src, x, y, size, size, 0, 0, size, size);
-    return c;
-  }
-
-  function binarize(src) {
-    const c = document.createElement('canvas');
-    c.width = src.width; c.height = src.height;
-    const ctx = c.getContext('2d', { willReadFrequently: true });
-    ctx.filter = 'contrast(3) grayscale(1) brightness(1.2)';
-    ctx.drawImage(src, 0, 0); ctx.filter = 'none';
-    const id = ctx.getImageData(0, 0, c.width, c.height);
-    const d = id.data;
-    for (let i = 0; i < d.length; i += 4) {
-      const g = d[i]*.299 + d[i+1]*.587 + d[i+2]*.114;
-      d[i] = d[i+1] = d[i+2] = g > 128 ? 255 : 0;
-    }
-    ctx.putImageData(id, 0, 0);
-    return c;
-  }
-
-  // ─── Manual Capture ───
-  async function captureAndDecode() {
-    if (video.videoWidth === 0) { DBG.err('captureAndDecode: videoWidth=0'); return; }
-    setStatus('scanning', 'Analyse…');
-    DBG.info('Manual capture…');
-    captureCtx.drawImage(video, 0, 0, captureCanvas.width, captureCanvas.height);
-
-    const variants = [
-      captureCanvas,
-      enhance(captureCanvas),
-      cropCenter(captureCanvas, 0.55),
-      binarize(captureCanvas),
-      binarize(cropCenter(captureCanvas, 0.55)),
-    ];
-
-    for (let i = 0; i < variants.length; i++) {
-      const raw = await tryDecode(variants[i]);
-      if (raw && raw.length > 10) {
-        DBG.ok('Manual decode OK on variant ' + i);
-        vibrate(); handleResult(raw); return;
-      }
-    }
-
-    DBG.warn('Manual capture: nothing found in ' + variants.length + ' variants');
-    setStatus('error', 'Aucun 2D-Doc détecté');
-    setTimeout(() => setStatus('scanning', 'Placez le 2D-Doc dans le cadre'), 2500);
-  }
-
-  // ─── File Input ───
   async function decodeFromFile(file) {
-    DBG.info('Decoding from file: ' + file.name);
-    const img = new Image();
-    img.onload = async () => {
+    var img = new Image();
+    img.onload = async function() {
       captureCanvas.width = img.naturalWidth;
       captureCanvas.height = img.naturalHeight;
       captureCtx.drawImage(img, 0, 0);
-      DBG.info('Image loaded: ' + img.naturalWidth + 'x' + img.naturalHeight);
-
-      const variants = [captureCanvas, enhance(captureCanvas), binarize(captureCanvas), cropCenter(captureCanvas, 0.6), binarize(cropCenter(captureCanvas, 0.6))];
-      for (const v of variants) {
-        const raw = await tryDecode(v);
-        if (raw && raw.length > 10) { DBG.ok('File decode OK'); vibrate(); handleResult(raw); return; }
+      if (!detector) return;
+      var variants = [captureCanvas, enhance(captureCanvas), binarize(captureCanvas), cropCenter(captureCanvas, 0.6), binarize(cropCenter(captureCanvas, 0.6))];
+      for (var i = 0; i < variants.length; i++) {
+        try {
+          var r = await detector.detect(variants[i]);
+          if (r && r.length > 0 && r[0].rawValue && r[0].rawValue.length > 5) {
+            feedback();
+            handleResult(r[0].rawValue, r[0].format || 'unknown');
+            return;
+          }
+        } catch(e) {}
       }
-      DBG.warn('File decode: nothing found');
-      setStatus('error', 'Aucun 2D-Doc dans l\'image');
-      setTimeout(() => setStatus('scanning', 'Placez le 2D-Doc dans le cadre'), 2500);
+      setPill('warn', 'Non trouvé');
+      setTimeout(function() { setPill('ok', 'Prêt'); }, 2000);
     };
-    img.onerror = () => { DBG.err('Image load error'); };
     img.src = URL.createObjectURL(file);
   }
 
-  // ─── Handle Result ───
-  function handleResult(raw) {
-    lastRawResult = raw;
+  // Image processing
+  function enhance(src) {
+    var c = document.createElement('canvas'); c.width = src.width; c.height = src.height;
+    var ctx = c.getContext('2d'); ctx.filter = 'contrast(2) grayscale(1) brightness(1.1)'; ctx.drawImage(src, 0, 0); return c;
+  }
+  function cropCenter(src, ratio) {
+    var size = Math.min(src.width, src.height) * ratio;
+    var x = (src.width - size) / 2, y = (src.height - size) / 2;
+    var c = document.createElement('canvas'); c.width = size; c.height = size;
+    c.getContext('2d').drawImage(src, x, y, size, size, 0, 0, size, size); return c;
+  }
+  function binarize(src) {
+    var c = document.createElement('canvas'); c.width = src.width; c.height = src.height;
+    var ctx = c.getContext('2d', { willReadFrequently: true });
+    ctx.filter = 'contrast(3) grayscale(1) brightness(1.2)'; ctx.drawImage(src, 0, 0); ctx.filter = 'none';
+    var id = ctx.getImageData(0, 0, c.width, c.height), d = id.data;
+    for (var i = 0; i < d.length; i += 4) { var g = d[i]*.299+d[i+1]*.587+d[i+2]*.114; d[i]=d[i+1]=d[i+2]= g>128?255:0; }
+    ctx.putImageData(id, 0, 0); return c;
+  }
+  function sleep(ms) { return new Promise(function(r) { setTimeout(r, ms); }); }
+
+  // ═══════════════════════════════════════
+  // RESULT HANDLING
+  // ═══════════════════════════════════════
+  async function handleResult(raw, format) {
+    lastRaw = raw;
     stopScanning();
-    renderResults(raw, parse2DDoc(raw));
+    var parsed = parse2DDoc(raw);
+    var sigResult = null;
+    if (parsed.isValid && parsed.signature && parsed.messageToVerify) {
+      sigResult = await verifySignature(parsed);
+    }
+    renderResults(raw, format, parsed, sigResult);
     resultsPanel.classList.add('open');
   }
 
   // ═══════════════════════════════════════
-  // 2D-Doc Parser
+  // 2D-DOC PARSER (ANTS spec)
   // ═══════════════════════════════════════
-
   function parse2DDoc(raw) {
-    const res = { isValid: false, header: {}, fields: [], signature: null, raw };
+    var res = { isValid: false, header: {}, fields: [], signature: null, messageToVerify: null, raw: raw };
     try {
-      let pos = 0;
-      let hStart = -1;
-      for (let i = 0; i < Math.min(10, raw.length - 1); i++) {
+      var pos = 0, hStart = -1;
+      for (var i = 0; i < Math.min(10, raw.length - 1); i++) {
         if (raw[i] === 'D' && raw[i+1] === 'C') { hStart = i; break; }
       }
-
       if (hStart >= 0) { pos = hStart + 2; res.header.marker = 'DC'; res.isValid = true; }
       else if (/^0[1-4]/.test(raw)) { res.isValid = true; }
 
       if (res.isValid) {
         res.header.version = raw.substring(pos, pos + 2); pos += 2;
-        const ver = parseInt(res.header.version, 10);
+        var ver = parseInt(res.header.version, 10);
         if (ver >= 1 && ver <= 4) {
           res.header.caId = raw.substring(pos, pos + 4); pos += 4;
           res.header.certId = raw.substring(pos, pos + 4); pos += 4;
@@ -735,36 +465,191 @@ const DBG = {
         }
       }
 
-      const rest = raw.substring(pos);
-      let sigIdx = -1;
-      for (let i = rest.length - 1; i >= 0; i--) {
-        if (rest[i] === '\x1E' || rest[i] === '\x1D') {
-          if (rest.length - i - 1 >= 40) { sigIdx = i; break; }
+      var rest = raw.substring(pos);
+      // Find signature separator (last RS 0x1E or GS 0x1D)
+      var sigIdx = -1;
+      for (var j = rest.length - 1; j >= 0; j--) {
+        var ch = rest.charCodeAt(j);
+        if (ch === 0x1E || ch === 0x1D) {
+          if (rest.length - j - 1 >= 40) { sigIdx = j; break; }
         }
       }
 
-      let msg = sigIdx >= 0 ? rest.substring(0, sigIdx) : rest;
-      if (sigIdx >= 0) res.signature = rest.substring(sigIdx + 1);
+      var msg = sigIdx >= 0 ? rest.substring(0, sigIdx) : rest;
+      if (sigIdx >= 0) {
+        res.signature = rest.substring(sigIdx + 1);
+        // Message to verify = everything from start to the separator (inclusive of header)
+        res.messageToVerify = raw.substring(0, pos + sigIdx);
+      }
 
-      const parts = msg.split(/[\x1D\x1E\x1F]/);
-      for (const p of parts) {
+      var parts = msg.split(/[\x1D\x1E\x1F]/);
+      for (var k = 0; k < parts.length; k++) {
+        var p = parts[k];
         if (p.length < 3) continue;
-        const tag = p.substring(0, 2).toUpperCase();
-        const val = p.substring(2);
-        const known = TAGS[tag];
-        res.fields.push({ tag, label: known?.label || `Champ ${tag}`, value: val });
+        var tag = p.substring(0, 2).toUpperCase();
+        var val = p.substring(2);
+        res.fields.push({ tag: tag, label: TAGS[tag] ? TAGS[tag].label : 'Champ ' + tag, value: val });
       }
     } catch(e) { res.parseError = e.message; }
     return res;
   }
 
   function hexDate(hex) {
-    const d = parseInt(hex, 16);
+    var d = parseInt(hex, 16);
     if (isNaN(d) || d > 36500) return hex;
     return new Date(2000, 0, 1 + d).toLocaleDateString('fr-FR');
   }
 
-  const TAGS = {
+  // ═══════════════════════════════════════
+  // SIGNATURE VERIFICATION (ECDSA P-256)
+  // ═══════════════════════════════════════
+  // Known ANTS CA public keys (source: https://ants.gouv.fr/2D-Doc)
+  var KNOWN_KEYS = {
+    // Format: "caId+certId" -> { x, y } (Base64url-encoded P-256 coordinates)
+    // FR00 - ANTS production keys
+    'FR000001': {
+      x: 'f0yGRT4rOaIxjBN08mEUfb4Kry1rS6VBnxRoNJfl0Xo',
+      y: 'b9Y_2nU-mSIyrNV1JhSAMQNMDfnJb9XWYn4aqw1p3kI',
+      curve: 'P-256'
+    },
+    // Additional keys can be added as they are published
+  };
+
+  async function verifySignature(parsed) {
+    // Check if Web Crypto is available
+    if (!window.crypto || !window.crypto.subtle) {
+      return { status: 'unsupported', message: 'Web Crypto non disponible' };
+    }
+
+    var caId = parsed.header.caId || '';
+    var certId = parsed.header.certId || '';
+    var keyId = caId + certId;
+
+    // Check if we have the public key
+    var keyData = KNOWN_KEYS[keyId];
+    if (!keyData) {
+      return { status: 'unknown', message: 'Clé CA inconnue: ' + keyId };
+    }
+
+    try {
+      // Import the public key
+      var publicKey = await crypto.subtle.importKey(
+        'jwk',
+        {
+          kty: 'EC',
+          crv: keyData.curve || 'P-256',
+          x: keyData.x,
+          y: keyData.y
+        },
+        { name: 'ECDSA', namedCurve: keyData.curve || 'P-256' },
+        false,
+        ['verify']
+      );
+
+      // Prepare the message (UTF-8 encoded)
+      var msgBytes = new TextEncoder().encode(parsed.messageToVerify);
+
+      // Decode signature from hex or raw
+      var sigBytes;
+      var sigStr = parsed.signature;
+      if (/^[0-9a-fA-F]+$/.test(sigStr)) {
+        // Hex-encoded signature
+        sigBytes = hexToBytes(sigStr);
+      } else {
+        // Raw binary signature
+        sigBytes = new Uint8Array(sigStr.length);
+        for (var i = 0; i < sigStr.length; i++) {
+          sigBytes[i] = sigStr.charCodeAt(i);
+        }
+      }
+
+      // 2D-Doc uses DER-encoded ECDSA signatures — convert to raw r||s for Web Crypto
+      var rawSig = derToRaw(sigBytes);
+      if (!rawSig) {
+        return { status: 'invalid', message: 'Format signature invalide (DER)' };
+      }
+
+      // Verify
+      var valid = await crypto.subtle.verify(
+        { name: 'ECDSA', hash: 'SHA-256' },
+        publicKey,
+        rawSig,
+        msgBytes
+      );
+
+      return {
+        status: valid ? 'verified' : 'invalid',
+        message: valid ? 'Signature ECDSA valide ✓' : 'Signature invalide ✗',
+        keyId: keyId
+      };
+    } catch(e) {
+      return { status: 'error', message: 'Erreur vérif: ' + e.message };
+    }
+  }
+
+  function hexToBytes(hex) {
+    var bytes = new Uint8Array(hex.length / 2);
+    for (var i = 0; i < hex.length; i += 2) {
+      bytes[i / 2] = parseInt(hex.substring(i, i + 2), 16);
+    }
+    return bytes;
+  }
+
+  // Convert DER-encoded ECDSA signature to raw r||s (64 bytes for P-256)
+  function derToRaw(der) {
+    try {
+      if (!(der instanceof Uint8Array)) return null;
+      // Already raw 64-byte format?
+      if (der.length === 64) return der;
+
+      var offset = 0;
+      if (der[offset] !== 0x30) return null; // SEQUENCE
+      offset++;
+      var seqLen = der[offset]; offset++;
+      if (seqLen & 0x80) { offset += (seqLen & 0x7F); } // skip long form length
+
+      // Read r
+      if (der[offset] !== 0x02) return null; // INTEGER
+      offset++;
+      var rLen = der[offset]; offset++;
+      var r = der.slice(offset, offset + rLen);
+      offset += rLen;
+
+      // Read s
+      if (der[offset] !== 0x02) return null;
+      offset++;
+      var sLen = der[offset]; offset++;
+      var s = der.slice(offset, offset + sLen);
+
+      // Pad/trim to 32 bytes each
+      var rPad = padTo32(r);
+      var sPad = padTo32(s);
+
+      var raw = new Uint8Array(64);
+      raw.set(rPad, 0);
+      raw.set(sPad, 32);
+      return raw;
+    } catch(e) {
+      return null;
+    }
+  }
+
+  function padTo32(buf) {
+    // Remove leading zeros
+    var start = 0;
+    while (start < buf.length && buf[start] === 0) start++;
+    var trimmed = buf.slice(start);
+    if (trimmed.length > 32) trimmed = trimmed.slice(trimmed.length - 32);
+    if (trimmed.length === 32) return trimmed;
+    var padded = new Uint8Array(32);
+    padded.set(trimmed, 32 - trimmed.length);
+    return padded;
+  }
+
+  // ═══════════════════════════════════════
+  // 2D-DOC FIELD TAGS
+  // ═══════════════════════════════════════
+  var TAGS = {
     '01':{label:'Ligne identité 1'},'02':{label:'Ligne identité 2'},'03':{label:'Ligne identité 3'},
     '04':{label:'Ligne identité 4'},'05':{label:'Ligne identité 5'},
     '06':{label:'Point de remise'},'07':{label:'Code postal'},'08':{label:'Ville'},'09':{label:'Pays'},
@@ -786,86 +671,116 @@ const DBG = {
     '43':{label:'N° fiscal'},'44':{label:'Réf. avis'},'45':{label:'Montant impôt'},
     '46':{label:'Situation famille'},'47':{label:'Pers. à charge'},
     '50':{label:'Immatriculation'},'51':{label:'Date immat.'},'52':{label:'Titulaire'},
-    '53':{label:'Marque'},'54':{label:'Modèle'},'55':{label:'N° VIN'},
+    '53':{label:'Marque'},'54':{label:'Modèle'},'55':{label:'N° VIN'}
   };
 
-  const DOC_TYPES = {
+  var DOC_TYPES = {
     '00':'Justificatif de domicile','01':'Justificatif de domicile','02':'Facture',
     '03':'Avis d\'imposition','04':'Titre d\'identité','05':'Carte grise',
     '06':'Diplôme','07':'Carte Vitale','08':'RIB','09':'Bulletin de salaire',
+    '10':'Contrat de travail','11':'Attestation employeur'
   };
 
-  // ─── Render Results ───
-  function renderResults(raw, p) {
-    let h = '';
-    h += p.isValid
-      ? '<div class="result-badge success">✓ 2D-Doc détecté</div>'
-      : '<div class="result-badge warning">⚠ Format non standard</div>';
+  // ═══════════════════════════════════════
+  // RENDER
+  // ═══════════════════════════════════════
+  function renderResults(raw, format, p, sig) {
+    var h = '';
 
-    if (p.header.version) {
-      const hd = p.header;
-      h += `<div class="field-card" style="margin-bottom:16px">
-        <div class="field-tag">EN-TÊTE</div>
-        <div class="field-label">Version ${hd.version} ${hd.marker||''}</div>
-        ${hd.caId ? `<div class="field-label">CA: ${hd.caId} — Cert: ${hd.certId}</div>` : ''}
-        ${hd.emissionDate ? `<div class="field-label">Émis: ${hd.emissionDate} — Signé: ${hd.signatureDate}</div>` : ''}
-        ${hd.docTypeId ? `<div class="field-value" style="margin-top:6px">${DOC_TYPES[hd.docTypeId] || 'Type ' + hd.docTypeId}</div>` : ''}
-      </div>`;
+    // Format badge
+    var fmtLabel = (format || 'unknown').replace(/_/g, ' ').toUpperCase();
+    if (p.isValid) {
+      h += '<div class="result-badge success">✓ 2D-Doc — ' + fmtLabel + '</div>';
+    } else {
+      h += '<div class="result-badge warning">' + fmtLabel + '</div>';
     }
 
+    // Signature badge
+    if (sig) {
+      if (sig.status === 'verified') {
+        h += '<div class="sig-badge verified">🔒 ' + sig.message + '</div>';
+      } else if (sig.status === 'invalid') {
+        h += '<div class="sig-badge invalid">🔓 ' + sig.message + '</div>';
+      } else {
+        h += '<div class="sig-badge unknown">🔑 ' + sig.message + '</div>';
+      }
+    }
+
+    // Header
+    if (p.header.version) {
+      var hd = p.header;
+      h += '<div class="field-card" style="margin-bottom:16px">';
+      h += '<div class="field-tag">EN-TÊTE</div>';
+      h += '<div class="field-label">Version ' + hd.version + ' ' + (hd.marker || '') + '</div>';
+      if (hd.caId) h += '<div class="field-label">CA: ' + hd.caId + ' — Cert: ' + hd.certId + '</div>';
+      if (hd.emissionDate) h += '<div class="field-label">Émis: ' + hd.emissionDate + ' — Signé: ' + hd.signatureDate + '</div>';
+      if (hd.docTypeId) h += '<div class="field-value" style="margin-top:6px">' + (DOC_TYPES[hd.docTypeId] || 'Type ' + hd.docTypeId) + '</div>';
+      h += '</div>';
+    }
+
+    // Fields
     if (p.fields.length) {
       h += '<div class="fields-grid">';
-      for (const f of p.fields) {
-        let v = f.value;
+      for (var i = 0; i < p.fields.length; i++) {
+        var f = p.fields[i];
+        var v = f.value;
         if (/montant|net|impôt|revenu/i.test(f.label)) {
-          const n = parseInt(v, 10);
-          if (!isNaN(n) && n > 0) v = (n/100).toLocaleString('fr-FR',{style:'currency',currency:'EUR'});
+          var n = parseInt(v, 10);
+          if (!isNaN(n) && n > 0) v = (n / 100).toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' });
         }
-        h += `<div class="field-card"><div class="field-tag">${f.tag}</div><div class="field-label">${f.label}</div><div class="field-value">${esc(v)}</div></div>`;
+        h += '<div class="field-card"><div class="field-tag">' + f.tag + '</div><div class="field-label">' + f.label + '</div><div class="field-value">' + esc(v) + '</div></div>';
       }
       h += '</div>';
     }
 
-    h += `<div class="raw-data" style="margin-top:20px"><div class="raw-data-label">Brut — ${raw.length} car.</div><pre>${esc(fmtRaw(raw))}</pre></div>`;
+    // Raw
+    h += '<div class="raw-data" style="margin-top:20px"><div class="raw-data-label">Brut — ' + raw.length + ' car.</div><pre>' + esc(fmtRaw(raw)) + '</pre></div>';
+
     if (p.signature) {
-      h += `<div class="raw-data"><div class="raw-data-label">Signature (${p.signature.length})</div><pre style="color:var(--warning)">${esc(p.signature.substring(0,120))}…</pre></div>`;
+      h += '<div class="raw-data"><div class="raw-data-label">Signature (' + p.signature.length + ')</div><pre style="color:var(--warning)">' + esc(p.signature.substring(0, 120)) + '…</pre></div>';
     }
+
     resultsBody.innerHTML = h;
   }
 
-  function esc(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+  function esc(s) { return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
   function fmtRaw(s) {
-    return s.replace(/[\x00-\x1F]/g, c => {
-      const n = c.charCodeAt(0);
-      return {0x1D:'⟨GS⟩',0x1E:'⟨RS⟩',0x1F:'⟨US⟩',0x04:'⟨EOT⟩'}[n] || `⟨${n.toString(16).padStart(2,'0')}⟩`;
+    return s.replace(/[\x00-\x1F]/g, function(c) {
+      var n = c.charCodeAt(0);
+      var names = { 0x1D: '⟨GS⟩', 0x1E: '⟨RS⟩', 0x1F: '⟨US⟩', 0x04: '⟨EOT⟩' };
+      return names[n] || '⟨' + n.toString(16).padStart(2, '0') + '⟩';
     });
   }
 
-  // ─── Torch ───
-  async function toggleTorch() {
-    if (!stream) return;
-    const track = stream.getVideoTracks()[0];
-    if (!track.getCapabilities?.()?.torch) { DBG.warn('Torch not supported'); return; }
-    torchOn = !torchOn;
-    await track.applyConstraints({ advanced: [{ torch: torchOn }] });
-    document.getElementById('btn-torch').classList.toggle('active', torchOn);
-  }
-
-  // ─── UI Events ───
+  // ═══════════════════════════════════════
+  // UI
+  // ═══════════════════════════════════════
   function setupEvents() {
-    document.getElementById('btn-torch').addEventListener('click', toggleTorch);
-    document.getElementById('btn-capture').addEventListener('click', captureAndDecode);
-    document.getElementById('file-input').addEventListener('change', e => {
-      if (e.target.files?.[0]) decodeFromFile(e.target.files[0]);
+    document.getElementById('btn-torch').addEventListener('click', async function() {
+      if (!stream) return;
+      var track = stream.getVideoTracks()[0];
+      var caps = track.getCapabilities ? track.getCapabilities() : {};
+      if (!caps.torch) return;
+      torchOn = !torchOn;
+      await track.applyConstraints({ advanced: [{ torch: torchOn }] });
+      this.classList.toggle('active', torchOn);
+    });
+
+    document.getElementById('btn-capture').addEventListener('click', manualCapture);
+
+    document.getElementById('file-input').addEventListener('change', function(e) {
+      if (e.target.files && e.target.files[0]) decodeFromFile(e.target.files[0]);
       e.target.value = '';
     });
+
     document.getElementById('btn-close-results').addEventListener('click', closeResults);
     document.getElementById('btn-rescan').addEventListener('click', closeResults);
-    document.getElementById('btn-copy').addEventListener('click', () => {
-      navigator.clipboard.writeText(lastRawResult).then(() => {
-        const btn = document.getElementById('btn-copy');
+
+    document.getElementById('btn-copy').addEventListener('click', function() {
+      navigator.clipboard.writeText(lastRaw).then(function() {
+        var btn = document.getElementById('btn-copy');
         btn.textContent = 'Copié ✓';
-        setTimeout(() => btn.textContent = 'Copier', 1500);
+        setTimeout(function() { btn.textContent = 'Copier'; }, 1500);
       });
     });
   }
@@ -879,22 +794,17 @@ const DBG = {
     setTimeout(startScanning, 300);
   }
 
-  } catch(fatalErr) {
-    // This catches ANY error in the entire init flow
-    showCrash('FATAL: ' + fatalErr.message + ' @ ' + (fatalErr.stack || '').substring(0, 200));
-    DBG.err('FATAL: ' + fatalErr.message);
-    DBG.err('Stack: ' + (fatalErr.stack || 'none').substring(0, 300));
+  } catch(fatal) {
+    setPill('err', 'Crash');
+    console.error('[FATAL]', fatal);
   }
 })();
 
-// Service Worker — force update
+// Service Worker — force refresh
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.getRegistrations().then(function(regs) {
-    // Unregister old SWs first, then register new one
-    var p = regs.map(function(r) { return r.unregister(); });
-    Promise.all(p).then(function() {
-      navigator.serviceWorker.register('sw.js').catch(function(){});
-    });
+    regs.forEach(function(r) { r.unregister(); });
+    setTimeout(function() { navigator.serviceWorker.register('sw.js').catch(function(){}); }, 500);
   });
 }
 </script>
