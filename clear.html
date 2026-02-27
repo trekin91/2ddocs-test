@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width"><title>Clear Cache</title></head>
+<body style="background:#0a0a0f;color:#e8e8f0;font-family:monospace;padding:20px">
+<h2>Cache Cleaner</h2>
+<pre id="log"></pre>
+<script>
+var log = document.getElementById('log');
+function w(msg) { log.textContent += msg + '\n'; }
+
+(async function() {
+  w('Clearing service workers...');
+  if ('serviceWorker' in navigator) {
+    var regs = await navigator.serviceWorker.getRegistrations();
+    w('Found ' + regs.length + ' SW registrations');
+    for (var r of regs) {
+      await r.unregister();
+      w('Unregistered: ' + r.scope);
+    }
+  }
+
+  w('Clearing caches...');
+  if ('caches' in window) {
+    var keys = await caches.keys();
+    w('Found ' + keys.length + ' caches');
+    for (var k of keys) {
+      await caches.delete(k);
+      w('Deleted: ' + k);
+    }
+  }
+
+  w('\n✅ DONE! Redirecting in 2s...');
+  setTimeout(function() { location.href = 'index.html'; }, 2000);
+})();
+</script>
+</body>
+</html>

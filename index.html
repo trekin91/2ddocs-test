@@ -1,5 +1,4 @@
 <!DOCTYPE html>
-
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
@@ -71,24 +70,21 @@
     .file-input-wrapper input[type="file"]{position:absolute;inset:0;opacity:0;cursor:pointer}
     #capture-canvas{display:none}
 
-```
-/* ─── Debug Log ─── */
-#debug-log{position:absolute;top:8px;left:8px;right:8px;z-index:50;background:rgba(0,0,0,.85);border:1px solid var(--border);border-radius:10px;padding:10px;max-height:40%;overflow-y:auto;font-family:'JetBrains Mono',monospace;font-size:.65rem;line-height:1.5;pointer-events:auto;display:none}
-#debug-log.visible{display:block}
-#debug-log .log-line{margin-bottom:2px}
-#debug-log .log-ok{color:var(--accent)}
-#debug-log .log-warn{color:var(--warning)}
-#debug-log .log-err{color:var(--danger)}
-#debug-log .log-info{color:var(--text-dim)}
-#btn-debug{position:absolute;top:8px;right:8px;z-index:51;width:28px;height:28px;background:var(--surface2);border:1px solid var(--border);color:var(--text-dim);border-radius:6px;font-size:.7rem;cursor:pointer;display:grid;place-items:center}
+    /* ─── Debug Log ─── */
+    #debug-log{position:absolute;top:8px;left:8px;right:8px;z-index:50;background:rgba(0,0,0,.85);border:1px solid var(--border);border-radius:10px;padding:10px;max-height:40%;overflow-y:auto;font-family:'JetBrains Mono',monospace;font-size:.65rem;line-height:1.5;pointer-events:auto;display:none}
+    #debug-log.visible{display:block}
+    #debug-log .log-line{margin-bottom:2px}
+    #debug-log .log-ok{color:var(--accent)}
+    #debug-log .log-warn{color:var(--warning)}
+    #debug-log .log-err{color:var(--danger)}
+    #debug-log .log-info{color:var(--text-dim)}
+    #btn-debug{position:absolute;top:8px;right:8px;z-index:51;width:28px;height:28px;background:var(--surface2);border:1px solid var(--border);color:var(--text-dim);border-radius:6px;font-size:.7rem;cursor:pointer;display:grid;place-items:center}
 
-@supports (padding-top: env(safe-area-inset-top)){
-  .header{padding-top:calc(16px + env(safe-area-inset-top))}
-  .results-actions{padding-bottom:calc(16px + env(safe-area-inset-bottom))}
-  .controls{padding-bottom:calc(12px + env(safe-area-inset-bottom))}
-}
-```
-
+    @supports (padding-top: env(safe-area-inset-top)){
+      .header{padding-top:calc(16px + env(safe-area-inset-top))}
+      .results-actions{padding-bottom:calc(16px + env(safe-area-inset-bottom))}
+      .controls{padding-bottom:calc(12px + env(safe-area-inset-bottom))}
+    }
   </style>
 </head>
 <body>
@@ -117,20 +113,17 @@
       <div class="scan-line"></div>
     </div>
 
-```
-<!-- Debug log overlay -->
-<button id="btn-debug" onclick="document.getElementById('debug-log').classList.toggle('visible')">🐛</button>
-<div id="debug-log"></div>
+    <!-- Debug log overlay -->
+    <button id="btn-debug" onclick="document.getElementById('debug-log').classList.toggle('visible')">🐛</button>
+    <div id="debug-log"></div>
 
-<div class="status-bar">
-  <div class="status-text">
-    <div class="status-dot" id="status-dot"></div>
-    <span id="status-msg">Initialisation…</span>
-  </div>
-  <div id="fps-counter" style="font-family:'JetBrains Mono',monospace;font-size:.7rem;color:var(--text-dim)"></div>
-</div>
-```
-
+    <div class="status-bar">
+      <div class="status-text">
+        <div class="status-dot" id="status-dot"></div>
+        <span id="status-msg">Initialisation…</span>
+      </div>
+      <div id="fps-counter" style="font-family:'JetBrains Mono',monospace;font-size:.7rem;color:var(--text-dim)"></div>
+    </div>
   </div>
 
   <div class="controls">
@@ -172,37 +165,60 @@
 
 <script>
 // ═══════════════════════════════════════
+// GLOBAL ERROR HANDLER — catches everything
+// ═══════════════════════════════════════
+window.onerror = function(msg, src, line, col, err) {
+  showCrash('JS Error: ' + msg + ' (line ' + line + ')');
+};
+window.addEventListener('unhandledrejection', function(e) {
+  showCrash('Promise rejected: ' + (e.reason?.message || e.reason || 'unknown'));
+});
+function showCrash(msg) {
+  var el = document.getElementById('debug-log');
+  if (el) {
+    el.classList.add('visible');
+    el.innerHTML += '<div class="log-line log-err">[CRASH] ' + msg + '</div>';
+    el.scrollTop = el.scrollHeight;
+  }
+  var s = document.getElementById('status-msg');
+  if (s) s.textContent = 'ERREUR: ' + msg;
+  console.error('[CRASH]', msg);
+}
+
+// ═══════════════════════════════════════
 // DEBUG LOGGER — visible on screen
 // ═══════════════════════════════════════
 const DBG = {
   el: null,
   init() { this.el = document.getElementById('debug-log'); this.el.classList.add('visible'); },
-  log(msg, type = 'info') {
+  log(msg, type) {
+    type = type || 'info';
     if (!this.el) return;
-    const line = document.createElement('div');
+    var line = document.createElement('div');
     line.className = 'log-line log-' + type;
-    line.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+    line.textContent = '[' + new Date().toLocaleTimeString() + '] ' + msg;
     this.el.appendChild(line);
     this.el.scrollTop = this.el.scrollHeight;
-    console.log(`[${type}] ${msg}`);
+    console.log('[' + type + '] ' + msg);
   },
-  ok(m) { this.log(m, 'ok'); },
-  warn(m) { this.log(m, 'warn'); },
-  err(m) { this.log(m, 'err'); },
-  info(m) { this.log(m, 'info'); },
+  ok: function(m) { this.log(m, 'ok'); },
+  warn: function(m) { this.log(m, 'warn'); },
+  err: function(m) { this.log(m, 'err'); },
+  info: function(m) { this.log(m, 'info'); },
 };
 
 // ═══════════════════════════════════════
 // MAIN APP
 // ═══════════════════════════════════════
 (async function main() {
+  try {
   // Wait for DOM
   if (document.readyState === 'loading') {
-    await new Promise(r => document.addEventListener('DOMContentLoaded', r));
+    await new Promise(function(r) { document.addEventListener('DOMContentLoaded', r); });
   }
 
   DBG.init();
-  DBG.info('App starting…');
+  DBG.info('App starting v6…');
 
   // ─── Device Detection & Debug ───
   const ua = navigator.userAgent;
@@ -811,66 +827,76 @@ const DBG = {
     }
 
     h += `<div class="raw-data" style="margin-top:20px"><div class="raw-data-label">Brut — ${raw.length} car.</div><pre>${esc(fmtRaw(raw))}</pre></div>`;
+    if (p.signature) {
+      h += `<div class="raw-data"><div class="raw-data-label">Signature (${p.signature.length})</div><pre style="color:var(--warning)">${esc(p.signature.substring(0,120))}…</pre></div>`;
+    }
+    resultsBody.innerHTML = h;
+  }
 
-```
-if (p.signature) {
-  h += `<div class="raw-data"><div class="raw-data-label">Signature (${p.signature.length})</div><pre style="color:var(--warning)">${esc(p.signature.substring(0,120))}…</pre></div>`;
-}
-resultsBody.innerHTML = h;
-```
+  function esc(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+  function fmtRaw(s) {
+    return s.replace(/[\x00-\x1F]/g, c => {
+      const n = c.charCodeAt(0);
+      return {0x1D:'⟨GS⟩',0x1E:'⟨RS⟩',0x1F:'⟨US⟩',0x04:'⟨EOT⟩'}[n] || `⟨${n.toString(16).padStart(2,'0')}⟩`;
+    });
+  }
 
-}
+  // ─── Torch ───
+  async function toggleTorch() {
+    if (!stream) return;
+    const track = stream.getVideoTracks()[0];
+    if (!track.getCapabilities?.()?.torch) { DBG.warn('Torch not supported'); return; }
+    torchOn = !torchOn;
+    await track.applyConstraints({ advanced: [{ torch: torchOn }] });
+    document.getElementById('btn-torch').classList.toggle('active', torchOn);
+  }
 
-function esc(s) { return s.replace(/&/g,’&’).replace(/</g,’<’).replace(/>/g,’>’); }
-function fmtRaw(s) {
-return s.replace(/[\x00-\x1F]/g, c => {
-const n = c.charCodeAt(0);
-return {0x1D:’⟨GS⟩’,0x1E:’⟨RS⟩’,0x1F:’⟨US⟩’,0x04:’⟨EOT⟩’}[n] || `⟨${n.toString(16).padStart(2,'0')}⟩`;
-});
-}
+  // ─── UI Events ───
+  function setupEvents() {
+    document.getElementById('btn-torch').addEventListener('click', toggleTorch);
+    document.getElementById('btn-capture').addEventListener('click', captureAndDecode);
+    document.getElementById('file-input').addEventListener('change', e => {
+      if (e.target.files?.[0]) decodeFromFile(e.target.files[0]);
+      e.target.value = '';
+    });
+    document.getElementById('btn-close-results').addEventListener('click', closeResults);
+    document.getElementById('btn-rescan').addEventListener('click', closeResults);
+    document.getElementById('btn-copy').addEventListener('click', () => {
+      navigator.clipboard.writeText(lastRawResult).then(() => {
+        const btn = document.getElementById('btn-copy');
+        btn.textContent = 'Copié ✓';
+        setTimeout(() => btn.textContent = 'Copier', 1500);
+      });
+    });
+  }
 
-// ─── Torch ───
-async function toggleTorch() {
-if (!stream) return;
-const track = stream.getVideoTracks()[0];
-if (!track.getCapabilities?.()?.torch) { DBG.warn(‘Torch not supported’); return; }
-torchOn = !torchOn;
-await track.applyConstraints({ advanced: [{ torch: torchOn }] });
-document.getElementById(‘btn-torch’).classList.toggle(‘active’, torchOn);
-}
+  function closeResults() {
+    resultsPanel.classList.remove('open');
+    if (video.videoWidth > 0) {
+      captureCanvas.width = video.videoWidth;
+      captureCanvas.height = video.videoHeight;
+    }
+    setTimeout(startScanning, 300);
+  }
 
-// ─── UI Events ───
-function setupEvents() {
-document.getElementById(‘btn-torch’).addEventListener(‘click’, toggleTorch);
-document.getElementById(‘btn-capture’).addEventListener(‘click’, captureAndDecode);
-document.getElementById(‘file-input’).addEventListener(‘change’, e => {
-if (e.target.files?.[0]) decodeFromFile(e.target.files[0]);
-e.target.value = ‘’;
-});
-document.getElementById(‘btn-close-results’).addEventListener(‘click’, closeResults);
-document.getElementById(‘btn-rescan’).addEventListener(‘click’, closeResults);
-document.getElementById(‘btn-copy’).addEventListener(‘click’, () => {
-navigator.clipboard.writeText(lastRawResult).then(() => {
-const btn = document.getElementById(‘btn-copy’);
-btn.textContent = ‘Copié ✓’;
-setTimeout(() => btn.textContent = ‘Copier’, 1500);
-});
-});
-}
-
-function closeResults() {
-resultsPanel.classList.remove(‘open’);
-if (video.videoWidth > 0) {
-captureCanvas.width = video.videoWidth;
-captureCanvas.height = video.videoHeight;
-}
-setTimeout(startScanning, 300);
-}
+  } catch(fatalErr) {
+    // This catches ANY error in the entire init flow
+    showCrash('FATAL: ' + fatalErr.message + ' @ ' + (fatalErr.stack || '').substring(0, 200));
+    DBG.err('FATAL: ' + fatalErr.message);
+    DBG.err('Stack: ' + (fatalErr.stack || 'none').substring(0, 300));
+  }
 })();
 
-// Service Worker
-if (‘serviceWorker’ in navigator) navigator.serviceWorker.register(‘sw.js’).catch(()=>{});
+// Service Worker — force update
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.getRegistrations().then(function(regs) {
+    // Unregister old SWs first, then register new one
+    var p = regs.map(function(r) { return r.unregister(); });
+    Promise.all(p).then(function() {
+      navigator.serviceWorker.register('sw.js').catch(function(){});
+    });
+  });
+}
 </script>
-
 </body>
 </html>
