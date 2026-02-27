@@ -3,230 +3,532 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <meta name="theme-color" content="#0c1117">
+  <meta name="theme-color" content="#0b1120">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <link rel="manifest" href="manifest.json">
-  <title>VetScan — Scanner GS1</title>
+  <title>InfraVetScan</title>
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
     *{margin:0;padding:0;box-sizing:border-box}
     :root{
-      --bg:#0c1117;--bg2:#141b23;--bg3:#1a232e;
-      --border:#243040;--border-hi:#2e4a5e;
-      --text:#e2e8f0;--text-dim:#6b8299;--text-muted:#3d5468;
-      --teal:#60b8f0;--teal-dim:#60b8f015;--teal-glow:#60b8f040;
-      --blue:#38bdf8;--blue-dim:#38bdf815;
-      --amber:#fbbf24;--amber-dim:#fbbf2415;
-      --red:#f87171;
+      --bg:#0b1120;--bg2:#111827;--bg3:#1a2436;
+      --border:#1e3048;--border-hi:#2a4a6b;
+      --text:#e2eaf4;--text-dim:#7a96b5;--text-muted:#3d5875;
+      --pri:#5cb4f0;--pri-dim:#5cb4f012;--pri-glow:#5cb4f035;--pri-deep:#3a8fd4;
+      --sky:#8ad4ff;
+      --amber:#fbbf24;--amber-dim:#fbbf2412;--amber-brd:#fbbf2420;
+      --red:#f87171;--red-dim:#f8717112;--red-brd:#f8717120;
+      --green:#4ade80;--green-dim:#4ade8012;--green-brd:#4ade8020;
       --radius:14px;--radius-sm:10px;
     }
     html,body{height:100%;background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;overflow:hidden;-webkit-tap-highlight-color:transparent}
-    .app{display:flex;flex-direction:column;height:100dvh;max-width:500px;margin:0 auto;position:relative}
-    .header{padding:14px 20px;display:flex;align-items:center;gap:14px;z-index:10;background:linear-gradient(180deg,var(--bg) 0%,var(--bg) 80%,transparent 100%)}
-    .logo{width:40px;height:40px;border-radius:12px;background:linear-gradient(135deg,var(--teal),#3a8fd4);display:grid;place-items:center;flex-shrink:0;box-shadow:0 4px 16px var(--teal-glow)}
-    .logo svg{width:22px;height:22px}
-    .header-text h1{font-size:1.15rem;font-weight:700;letter-spacing:-.03em;line-height:1.1}
-    .header-text small{font-size:.68rem;color:var(--text-dim);font-weight:400;letter-spacing:.02em}
-    .pill{margin-left:auto;display:flex;align-items:center;gap:5px;font-size:.62rem;padding:5px 10px;border-radius:20px;background:var(--bg3);border:1px solid var(--border);color:var(--text-dim);font-family:'IBM Plex Mono',monospace;transition:all .4s;white-space:nowrap}
+    .app{display:flex;flex-direction:column;height:100dvh;max-width:500px;margin:0 auto}
+
+    /* Header */
+    .header{padding:14px 20px;display:flex;align-items:center;gap:12px;z-index:10;background:var(--bg)}
+    .logo{width:38px;height:38px;border-radius:11px;background:linear-gradient(135deg,var(--pri),var(--pri-deep));display:grid;place-items:center;flex-shrink:0;box-shadow:0 3px 14px var(--pri-glow)}
+    .logo svg{width:20px;height:20px}
+    .hdr-text h1{font-size:1.05rem;font-weight:700;letter-spacing:-.02em;line-height:1.15}
+    .hdr-text h1 span{color:var(--pri);font-weight:300}
+    .hdr-text small{font-size:.64rem;color:var(--text-dim);font-weight:400}
+    .pill{margin-left:auto;display:flex;align-items:center;gap:5px;font-size:.6rem;padding:4px 10px;border-radius:20px;background:var(--bg3);border:1px solid var(--border);color:var(--text-dim);font-family:'IBM Plex Mono',monospace;transition:all .4s;white-space:nowrap}
     .pill .dot{width:6px;height:6px;border-radius:50%;transition:all .4s}
-    .pill.ok .dot{background:var(--teal);box-shadow:0 0 6px var(--teal-glow)}
-    .pill.ok{color:var(--teal);border-color:var(--teal-glow)}
-    .pill.loading .dot{background:var(--amber);animation:pulse 1.2s ease infinite}
+    .pill.ok .dot{background:var(--pri);box-shadow:0 0 8px var(--pri-glow)}
+    .pill.ok{color:var(--pri);border-color:var(--pri-glow)}
+    .pill.loading .dot{background:var(--amber);animation:blink 1.2s ease infinite}
     .pill.err .dot{background:var(--red)}.pill.err{color:var(--red)}
-    @keyframes pulse{0%,100%{opacity:1}50%{opacity:.2}}
+    @keyframes blink{0%,100%{opacity:1}50%{opacity:.15}}
+
+    /* Camera */
     .camera{position:relative;flex:1;background:#000;overflow:hidden}
     #video{width:100%;height:100%;object-fit:cover}
-    .overlay{position:absolute;inset:0;pointer-events:none}
-    .vignette{position:absolute;inset:0;background:radial-gradient(circle 260px at 50% 48%,transparent 30%,rgba(12,17,23,.75) 70%)}
-    .frame{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:200px;height:200px}
-    .frame-border{position:absolute;inset:0;border:1.5px solid rgba(96,184,240,.25);border-radius:16px}
-    .frame .c{position:absolute;width:24px;height:24px;border-style:solid;border-color:var(--teal)}
-    .c.tl{top:-1px;left:-1px;border-width:2.5px 0 0 2.5px;border-radius:10px 0 0 0}
-    .c.tr{top:-1px;right:-1px;border-width:2.5px 2.5px 0 0;border-radius:0 10px 0 0}
-    .c.bl{bottom:-1px;left:-1px;border-width:0 0 2.5px 2.5px;border-radius:0 0 0 10px}
-    .c.br{bottom:-1px;right:-1px;border-width:0 2.5px 2.5px 0;border-radius:0 0 10px 0}
-    .sweep{position:absolute;left:8%;width:84%;height:1.5px;background:linear-gradient(90deg,transparent,var(--teal),transparent);box-shadow:0 0 16px var(--teal-glow);border-radius:2px;animation:sweep 2.2s ease-in-out infinite}
-    @keyframes sweep{0%,100%{top:8%;opacity:.3}50%{top:90%;opacity:.9}}
-    .flash{position:absolute;inset:0;background:var(--teal);opacity:0;transition:opacity .12s;pointer-events:none}
-    .flash.on{opacity:.2;transition:none}
-    .hint{position:absolute;bottom:24px;left:50%;transform:translateX(-50%);font-size:.72rem;color:var(--text-dim);background:rgba(12,17,23,.75);backdrop-filter:blur(8px);padding:8px 16px;border-radius:20px;white-space:nowrap;border:1px solid var(--border)}
-    .controls{padding:14px 20px;background:var(--bg);border-top:1px solid var(--border);display:flex;align-items:center;justify-content:center;gap:18px}
+    .ov{position:absolute;inset:0;pointer-events:none}
+    .vig{position:absolute;inset:0;background:radial-gradient(circle 250px at 50% 46%,transparent 28%,rgba(11,17,32,.8) 72%)}
+    .frame{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:195px;height:195px}
+    .frame-b{position:absolute;inset:0;border:1.5px solid rgba(92,180,240,.2);border-radius:16px}
+    .frame .c{position:absolute;width:22px;height:22px;border-style:solid;border-color:var(--pri)}
+    .c.tl{top:-1px;left:-1px;border-width:2.5px 0 0 2.5px;border-radius:9px 0 0 0}
+    .c.tr{top:-1px;right:-1px;border-width:2.5px 2.5px 0 0;border-radius:0 9px 0 0}
+    .c.bl{bottom:-1px;left:-1px;border-width:0 0 2.5px 2.5px;border-radius:0 0 0 9px}
+    .c.br{bottom:-1px;right:-1px;border-width:0 2.5px 2.5px 0;border-radius:0 0 9px 0}
+    .sweep{position:absolute;left:10%;width:80%;height:1.5px;background:linear-gradient(90deg,transparent,var(--sky),transparent);box-shadow:0 0 14px var(--pri-glow);border-radius:2px;animation:sw 2.4s ease-in-out infinite}
+    @keyframes sw{0%,100%{top:6%;opacity:.25}50%{top:92%;opacity:.85}}
+    .flash{position:absolute;inset:0;background:var(--pri);opacity:0;transition:opacity .12s;pointer-events:none}
+    .flash.on{opacity:.18;transition:none}
+    .hint{position:absolute;bottom:22px;left:50%;transform:translateX(-50%);font-size:.7rem;color:var(--text-dim);background:rgba(11,17,32,.8);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);padding:7px 16px;border-radius:20px;white-space:nowrap;border:1px solid var(--border)}
+
+    /* Controls */
+    .controls{padding:12px 20px;background:var(--bg);border-top:1px solid var(--border);display:flex;align-items:center;justify-content:center;gap:16px}
     .btn{border:none;cursor:pointer;font-family:inherit;transition:all .15s;display:flex;align-items:center;gap:8px}
-    .btn:active{transform:scale(.94)}
-    .btn-round{width:48px;height:48px;border-radius:50%;display:grid;place-items:center;background:var(--bg3);color:var(--text-dim);border:1px solid var(--border)}
-    .btn-round svg{width:20px;height:20px}
-    .btn-round.active{background:var(--teal-dim);color:var(--teal);border-color:var(--teal-glow)}
-    .btn-scan{width:68px;height:68px;border-radius:50%;display:grid;place-items:center;background:linear-gradient(135deg,var(--teal),#3a8fd4);color:#0c1117;border:3px solid var(--bg);box-shadow:0 0 0 2px var(--teal),0 4px 20px var(--teal-glow)}
-    .btn-scan svg{width:28px;height:28px}
-    .file-wrap{position:relative;display:inline-block}
-    .file-wrap input[type="file"]{position:absolute;inset:0;opacity:0;cursor:pointer}
-    .results{position:fixed;inset:0;background:var(--bg);z-index:100;display:flex;flex-direction:column;transform:translateY(100%);transition:transform .4s cubic-bezier(.16,1,.3,1)}
-    .results.open{transform:translateY(0)}
-    .results-head{padding:16px 20px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border)}
-    .results-head h2{font-size:1.05rem;font-weight:700}
-    .btn-x{width:34px;height:34px;background:var(--bg3);border:1px solid var(--border);color:var(--text);border-radius:50%;display:grid;place-items:center;cursor:pointer;font-size:1.1rem}
-    .results-body{flex:1;overflow-y:auto;padding:20px;-webkit-overflow-scrolling:touch}
-    .results-foot{padding:14px 20px;border-top:1px solid var(--border);display:flex;gap:10px}
-    .results-foot .btn{flex:1;justify-content:center;font-weight:600;border-radius:12px;padding:14px 0;font-size:.9rem}
-    .btn-ghost{background:var(--bg3);color:var(--text);border:1px solid var(--border)}
-    .btn-fill{background:linear-gradient(135deg,var(--teal),#3a8fd4);color:#0c1117;border:none}
-    .product-hero{background:linear-gradient(135deg,var(--teal-dim),var(--blue-dim));border:1px solid var(--border-hi);border-radius:var(--radius);padding:20px;margin-bottom:20px}
-    .product-hero .gtin{font-family:'IBM Plex Mono',monospace;font-size:.72rem;color:var(--teal);font-weight:500;margin-bottom:4px}
-    .product-hero .title{font-size:1rem;font-weight:600;margin-bottom:14px;line-height:1.3}
-    .meta-row{display:flex;gap:10px;flex-wrap:wrap}
-    .meta-chip{display:flex;align-items:center;gap:6px;background:rgba(12,17,23,.5);border:1px solid var(--border);border-radius:8px;padding:7px 12px;font-size:.78rem}
-    .meta-chip .lbl{color:var(--text-dim);font-size:.62rem;font-weight:500;text-transform:uppercase;letter-spacing:.04em}
-    .meta-chip strong{color:var(--text);font-weight:600}
-    .meta-chip.exp strong{color:var(--amber)}
-    .expiry-bar{margin-top:14px;padding:10px 14px;border-radius:10px;font-size:.78rem;font-weight:600;display:flex;align-items:center;gap:8px}
-    .expiry-bar.valid{background:#60b8f012;color:var(--teal);border:1px solid #60b8f020}
-    .expiry-bar.warn{background:#fbbf2412;color:var(--amber);border:1px solid #fbbf2420}
-    .expiry-bar.expired{background:#f8717112;color:var(--red);border:1px solid #f8717120}
-    .section-title{font-size:.66rem;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--text-muted);margin:20px 0 10px}
-    .fields{display:flex;flex-direction:column;gap:6px}
-    .field{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px 14px;display:flex;justify-content:space-between;align-items:baseline;gap:12px}
-    .field-left{flex:1;min-width:0}
-    .field-ai{font-family:'IBM Plex Mono',monospace;font-size:.6rem;color:var(--teal);font-weight:500}
-    .field-label{font-size:.72rem;color:var(--text-dim)}
-    .field-val{font-size:.92rem;font-weight:600;word-break:break-word;text-align:right;font-family:'IBM Plex Mono',monospace}
-    .raw-block{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px;margin-top:6px}
-    .raw-label{font-size:.6rem;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);margin-bottom:6px}
-    .raw-block pre{font-family:'IBM Plex Mono',monospace;font-size:.7rem;color:var(--teal);white-space:pre-wrap;word-break:break-all;line-height:1.6}
-    .badge{display:inline-flex;align-items:center;gap:5px;padding:5px 12px;border-radius:8px;font-size:.72rem;font-weight:600;margin-bottom:16px;background:var(--teal-dim);color:var(--teal);border:1px solid rgba(96,184,240,.15)}
+    .btn:active{transform:scale(.93)}
+    .btn-r{width:46px;height:46px;border-radius:50%;display:grid;place-items:center;background:var(--bg3);color:var(--text-dim);border:1px solid var(--border)}
+    .btn-r svg{width:19px;height:19px}
+    .btn-r.active{background:var(--pri-dim);color:var(--pri);border-color:var(--pri-glow)}
+    .btn-main{width:64px;height:64px;border-radius:50%;display:grid;place-items:center;background:linear-gradient(135deg,var(--pri),var(--pri-deep));color:#0b1120;border:3px solid var(--bg);box-shadow:0 0 0 2px var(--pri),0 4px 18px var(--pri-glow)}
+    .btn-main svg{width:26px;height:26px}
+    .fw{position:relative;display:inline-block}
+    .fw input[type="file"]{position:absolute;inset:0;opacity:0;cursor:pointer}
+
+    /* Results */
+    .res{position:fixed;inset:0;background:var(--bg);z-index:100;display:flex;flex-direction:column;transform:translateY(100%);transition:transform .4s cubic-bezier(.16,1,.3,1)}
+    .res.open{transform:translateY(0)}
+    .res-head{padding:14px 20px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border)}
+    .res-head h2{font-size:1rem;font-weight:700}
+    .btn-x{width:32px;height:32px;background:var(--bg3);border:1px solid var(--border);color:var(--text);border-radius:50%;display:grid;place-items:center;cursor:pointer;font-size:1rem}
+    .res-body{flex:1;overflow-y:auto;padding:20px;-webkit-overflow-scrolling:touch}
+    .res-foot{padding:12px 20px;border-top:1px solid var(--border);display:flex;gap:10px}
+    .res-foot .btn{flex:1;justify-content:center;font-weight:600;border-radius:12px;padding:13px 0;font-size:.88rem}
+    .btn-gh{background:var(--bg3);color:var(--text);border:1px solid var(--border)}
+    .btn-pr{background:linear-gradient(135deg,var(--pri),var(--pri-deep));color:#0b1120;border:none}
+
+    /* Cards */
+    .hero{background:linear-gradient(145deg,var(--pri-dim),rgba(56,189,248,.06));border:1px solid var(--border-hi);border-radius:var(--radius);padding:20px;margin-bottom:16px;position:relative;overflow:hidden}
+    .hero::before{content:'';position:absolute;top:-40px;right:-40px;width:120px;height:120px;background:radial-gradient(circle,var(--pri-glow),transparent 70%);pointer-events:none}
+    .hero .type-badge{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:6px;font-size:.66rem;font-weight:600;margin-bottom:10px}
+    .type-badge.human{background:#a78bfa18;color:#a78bfa;border:1px solid #a78bfa20}
+    .type-badge.vet{background:#4ade8012;color:var(--green);border:1px solid var(--green-brd)}
+    .type-badge.unknown{background:var(--bg3);color:var(--text-dim);border:1px solid var(--border)}
+    .hero .gtin{font-family:'IBM Plex Mono',monospace;font-size:.68rem;color:var(--pri);font-weight:500;margin-bottom:6px}
+    .hero .med-name{font-size:1.08rem;font-weight:700;line-height:1.35;margin-bottom:4px}
+    .hero .med-sub{font-size:.76rem;color:var(--text-dim);line-height:1.3;margin-bottom:14px}
+    .hero .med-loading{font-size:.76rem;color:var(--text-dim);font-style:italic;margin-bottom:14px}
+    .meta{display:flex;gap:8px;flex-wrap:wrap}
+    .chip{display:flex;align-items:center;gap:6px;background:rgba(11,17,32,.6);border:1px solid var(--border);border-radius:8px;padding:7px 11px;font-size:.76rem}
+    .chip .lb{color:var(--text-dim);font-size:.58rem;font-weight:500;text-transform:uppercase;letter-spacing:.04em}
+    .chip strong{font-weight:600}
+    .chip.exp strong{color:var(--amber)}
+    .exp-bar{margin-top:14px;padding:10px 14px;border-radius:10px;font-size:.76rem;font-weight:600;display:flex;align-items:center;gap:8px}
+    .exp-bar.valid{background:var(--green-dim);color:var(--green);border:1px solid var(--green-brd)}
+    .exp-bar.warn{background:var(--amber-dim);color:var(--amber);border:1px solid var(--amber-brd)}
+    .exp-bar.expired{background:var(--red-dim);color:var(--red);border:1px solid var(--red-brd)}
+
+    .stitle{font-size:.64rem;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--text-muted);margin:20px 0 8px}
+    .fields{display:flex;flex-direction:column;gap:5px}
+    .fd{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:11px 13px;display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+    .fd-l{flex:1;min-width:0}
+    .fd-ai{font-family:'IBM Plex Mono',monospace;font-size:.58rem;color:var(--pri);font-weight:500}
+    .fd-lb{font-size:.7rem;color:var(--text-dim)}
+    .fd-v{font-size:.88rem;font-weight:600;word-break:break-word;text-align:right;font-family:'IBM Plex Mono',monospace}
+    .raw{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px;margin-top:5px}
+    .raw-lb{font-size:.58rem;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);margin-bottom:5px}
+    .raw pre{font-family:'IBM Plex Mono',monospace;font-size:.68rem;color:var(--pri);white-space:pre-wrap;word-break:break-all;line-height:1.6}
+
     #capture-canvas{display:none}
     @supports(padding-top:env(safe-area-inset-top)){
       .header{padding-top:calc(14px + env(safe-area-inset-top))}
-      .results-foot{padding-bottom:calc(14px + env(safe-area-inset-bottom))}
-      .controls{padding-bottom:calc(14px + env(safe-area-inset-bottom))}
+      .res-foot{padding-bottom:calc(12px + env(safe-area-inset-bottom))}
+      .controls{padding-bottom:calc(12px + env(safe-area-inset-bottom))}
     }
   </style>
 </head>
 <body>
 <div class="app">
   <div class="header">
-    <div class="logo">
-      <svg viewBox="0 0 24 24" fill="none" stroke="#0c1117" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M7 3C4.24 3 2 5.69 2 9c0 3.92 3.18 7.29 8.35 11.66a2.5 2.5 0 0 0 3.3 0C18.82 16.29 22 12.92 22 9c0-3.31-2.24-6-5-6a5.07 5.07 0 0 0-3.79 1.89l-.21.25-.21-.25A5.07 5.07 0 0 0 7 3z"/>
-      </svg>
-    </div>
-    <div class="header-text"><h1>VetScan</h1><small>Scanner GS1 DataMatrix</small></div>
-    <div class="pill loading" id="pill"><span class="dot"></span><span id="pill-txt">Init…</span></div>
+    <div class="logo"><svg viewBox="0 0 24 24" fill="none" stroke="#0b1120" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3C4.24 3 2 5.69 2 9c0 3.92 3.18 7.29 8.35 11.66a2.5 2.5 0 0 0 3.3 0C18.82 16.29 22 12.92 22 9c0-3.31-2.24-6-5-6a5.07 5.07 0 0 0-3.79 1.89l-.21.25-.21-.25A5.07 5.07 0 0 0 7 3z"/></svg></div>
+    <div class="hdr-text"><h1>Infra<span>Vet</span>Scan</h1><small>Scanner GS1 médicaments</small></div>
+    <div class="pill loading" id="pill"><span class="dot"></span><span id="ptxt">Init…</span></div>
   </div>
   <div class="camera">
     <video id="video" autoplay playsinline muted></video>
-    <div class="overlay">
-      <div class="vignette"></div>
-      <div class="frame"><div class="frame-border"></div><div class="c tl"></div><div class="c tr"></div><div class="c bl"></div><div class="c br"></div><div class="sweep"></div></div>
+    <div class="ov">
+      <div class="vig"></div>
+      <div class="frame"><div class="frame-b"></div><div class="c tl"></div><div class="c tr"></div><div class="c bl"></div><div class="c br"></div><div class="sweep"></div></div>
       <div class="flash" id="flash"></div>
       <div class="hint">Visez le DataMatrix du médicament</div>
     </div>
   </div>
   <div class="controls">
-    <button class="btn btn-round" id="btn-torch"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 18h6"/><path d="M10 22h4"/><path d="M15.5 8a3.5 3.5 0 0 0-7 0c0 2 1.5 3 2 4h3c.5-1 2-2 2-4z"/></svg></button>
-    <button class="btn btn-scan" id="btn-capture"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><line x1="14" y1="14" x2="21" y2="14"/><line x1="14" y1="17.5" x2="21" y2="17.5"/><line x1="14" y1="21" x2="21" y2="21"/></svg></button>
-    <label class="btn btn-round file-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg><input type="file" accept="image/*" id="file-input"></label>
+    <button class="btn btn-r" id="btn-torch"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 18h6"/><path d="M10 22h4"/><path d="M15.5 8a3.5 3.5 0 0 0-7 0c0 2 1.5 3 2 4h3c.5-1 2-2 2-4z"/></svg></button>
+    <button class="btn btn-main" id="btn-cap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><line x1="14" y1="14" x2="21" y2="14"/><line x1="14" y1="17.5" x2="21" y2="17.5"/><line x1="14" y1="21" x2="21" y2="21"/></svg></button>
+    <label class="btn btn-r fw"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg><input type="file" accept="image/*" id="file-input"></label>
   </div>
   <canvas id="capture-canvas"></canvas>
 </div>
-<div class="results" id="results">
-  <div class="results-head"><h2>Résultat</h2><button class="btn-x" id="btn-close">&times;</button></div>
-  <div class="results-body" id="results-body"></div>
-  <div class="results-foot"><button class="btn btn-ghost" id="btn-copy">Copier</button><button class="btn btn-fill" id="btn-rescan">Nouveau scan</button></div>
+<div class="res" id="res">
+  <div class="res-head"><h2>Résultat</h2><button class="btn-x" id="btn-close">&times;</button></div>
+  <div class="res-body" id="res-body"></div>
+  <div class="res-foot"><button class="btn btn-gh" id="btn-copy">Copier</button><button class="btn btn-pr" id="btn-rescan">Nouveau scan</button></div>
 </div>
+
 <script>
-window.onerror=function(){setPill('err','Erreur')};
-function setPill(t,x){var p=document.getElementById('pill'),s=document.getElementById('pill-txt');if(p)p.className='pill '+t;if(s)s.textContent=x}
+window.onerror=function(){sp('err','Erreur')};
+function sp(t,x){var p=document.getElementById('pill'),s=document.getElementById('ptxt');if(p)p.className='pill '+t;if(s)s.textContent=x}
+
 (async function(){try{
 if(document.readyState==='loading')await new Promise(function(r){document.addEventListener('DOMContentLoaded',r)});
-var video=document.getElementById('video'),canvas=document.getElementById('capture-canvas'),ctx=canvas.getContext('2d',{willReadFrequently:true}),results=document.getElementById('results'),body=document.getElementById('results-body'),flash=document.getElementById('flash');
-var stream=null,det=null,scanning=false,torchOn=false,lastRaw='',raf=null,useNative=false,usePoly=false;
-var audioCtx=null;
-function beep(){try{if(!audioCtx)audioCtx=new(window.AudioContext||window.webkitAudioContext);[780,1040].forEach(function(f,i){var o=audioCtx.createOscillator(),g=audioCtx.createGain();o.type='sine';o.frequency.value=f;g.gain.value=.12;g.gain.exponentialRampToValueAtTime(.001,audioCtx.currentTime+.14+i*.09);o.connect(g);g.connect(audioCtx.destination);o.start(audioCtx.currentTime+i*.09);o.stop(audioCtx.currentTime+.14+i*.09)})}catch(e){}}
-function fb(){beep();flash.classList.add('on');setTimeout(function(){flash.classList.remove('on')},140);try{navigator.vibrate&&navigator.vibrate([60,30,60])}catch(e){}}
+
+var video=document.getElementById('video'),cv=document.getElementById('capture-canvas'),cx=cv.getContext('2d',{willReadFrequently:true}),
+  resPanel=document.getElementById('res'),resBody=document.getElementById('res-body'),fl=document.getElementById('flash');
+var stream=null,det=null,scanning=false,torchOn=false,lastRaw='',raf=null,nat=false,poly=false;
+
+// Audio
+var actx=null;
+function beep(){try{if(!actx)actx=new(window.AudioContext||window.webkitAudioContext);[800,1060].forEach(function(f,i){var o=actx.createOscillator(),g=actx.createGain();o.type='sine';o.frequency.value=f;g.gain.value=.11;g.gain.exponentialRampToValueAtTime(.001,actx.currentTime+.13+i*.08);o.connect(g);g.connect(actx.destination);o.start(actx.currentTime+i*.08);o.stop(actx.currentTime+.13+i*.08)})}catch(e){}}
+function fb(){beep();fl.classList.add('on');setTimeout(function(){fl.classList.remove('on')},130);try{navigator.vibrate&&navigator.vibrate([50,25,50])}catch(e){}}
 function sl(ms){return new Promise(function(r){setTimeout(r,ms)})}
-// Engine
-setPill('loading','Moteur…');
-if('BarcodeDetector' in window){try{var f=await BarcodeDetector.getSupportedFormats();if(f.indexOf('data_matrix')>=0){det=new BarcodeDetector({formats:['data_matrix']});useNative=true}}catch(e){}}
-if(!useNative){setPill('loading','WASM…');var urls=['https://cdn.jsdelivr.net/npm/barcode-detector@2/dist/es/pure.min.js','https://unpkg.com/barcode-detector@2/dist/es/pure.min.js','https://esm.sh/barcode-detector@2?bundle'];
-for(var ci=0;ci<urls.length;ci++){if(usePoly)break;try{var m=await Promise.race([import(urls[ci]),new Promise(function(_,j){setTimeout(function(){j(new Error('t'))},15000)})]);var D=m.BarcodeDetector||(m.default&&m.default.BarcodeDetector)||m.default;if(D&&typeof D==='function'){det=new D({formats:['data_matrix']});usePoly=true}}catch(e){}}}
-// Camera
-setPill('loading','Caméra…');
-try{stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment',width:{ideal:1280},height:{ideal:720}},audio:false});video.srcObject=stream;video.play().catch(function(){});var a=0;while(video.videoWidth===0&&a<60){await sl(100);a++}canvas.width=video.videoWidth||1280;canvas.height=video.videoHeight||720}catch(e){setPill('err','Caméra ✗')}
-if(det&&video.videoWidth>0){setPill('ok',(useNative?'Natif':'WASM')+' ✓');startScan()}else if(!det){setPill('err','Décodeur ✗')}else{setPill('err','Vidéo ✗')}
-// Events
+
+// ── Engine ──
+sp('loading','Moteur…');
+if('BarcodeDetector'in window){try{var sf=await BarcodeDetector.getSupportedFormats();if(sf.indexOf('data_matrix')>=0){det=new BarcodeDetector({formats:['data_matrix']});nat=true}}catch(e){}}
+if(!nat){sp('loading','WASM…');
+var urls=['https://cdn.jsdelivr.net/npm/barcode-detector@2/dist/es/pure.min.js','https://unpkg.com/barcode-detector@2/dist/es/pure.min.js','https://esm.sh/barcode-detector@2?bundle'];
+for(var ci=0;ci<urls.length;ci++){if(poly)break;try{var m=await Promise.race([import(urls[ci]),new Promise(function(_,j){setTimeout(function(){j()},15000)})]);var D=m.BarcodeDetector||(m.default&&m.default.BarcodeDetector)||m.default;if(D&&typeof D==='function'){det=new D({formats:['data_matrix']});poly=true}}catch(e){}}}
+
+// ── Camera ──
+sp('loading','Caméra…');
+try{stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment',width:{ideal:1280},height:{ideal:720}},audio:false});video.srcObject=stream;video.play().catch(function(){});var a=0;while(video.videoWidth===0&&a<60){await sl(100);a++}cv.width=video.videoWidth||1280;cv.height=video.videoHeight||720}catch(e){sp('err','Caméra ✗')}
+
+if(det&&video.videoWidth>0){sp('ok',(nat?'Natif':'WASM')+' ✓');startScan()}else{sp('err',!det?'Décodeur ✗':'Vidéo ✗')}
+
+// ── Events ──
 document.getElementById('btn-torch').addEventListener('click',async function(){if(!stream)return;var t=stream.getVideoTracks()[0],c=t.getCapabilities?t.getCapabilities():{};if(!c.torch)return;torchOn=!torchOn;await t.applyConstraints({advanced:[{torch:torchOn}]});this.classList.toggle('active',torchOn)});
-document.getElementById('btn-capture').addEventListener('click',manual);
+document.getElementById('btn-cap').addEventListener('click',manual);
 document.getElementById('file-input').addEventListener('change',function(e){if(e.target.files&&e.target.files[0])decFile(e.target.files[0]);e.target.value=''});
 document.getElementById('btn-close').addEventListener('click',closeR);
 document.getElementById('btn-rescan').addEventListener('click',closeR);
 document.getElementById('btn-copy').addEventListener('click',function(){navigator.clipboard.writeText(lastRaw).then(function(){var b=document.getElementById('btn-copy');b.textContent='Copié ✓';setTimeout(function(){b.textContent='Copier'},1500)})});
-// Scan
-function startScan(){if(scanning||!det)return;scanning=true;var iv=usePoly?250:50,last=0;
-function loop(ts){if(!scanning)return;if(ts-last<iv){raf=requestAnimationFrame(loop);return}last=ts;
-try{if(video.videoWidth===0){raf=requestAnimationFrame(loop);return}ctx.drawImage(video,0,0,canvas.width,canvas.height);
-det.detect(canvas).then(function(r){if(r&&r.length>0&&r[0].rawValue&&r[0].rawValue.length>5&&scanning){scanning=false;fb();onDec(r[0].rawValue)}}).catch(function(){})}catch(e){}
-if(scanning)raf=requestAnimationFrame(loop)}raf=requestAnimationFrame(loop)}
+
+// ═══════════════════════════════════════
+// SCAN LOOP
+// ═══════════════════════════════════════
+function startScan(){if(scanning||!det)return;scanning=true;var iv=poly?250:50,last=0;
+function lp(ts){if(!scanning)return;if(ts-last<iv){raf=requestAnimationFrame(lp);return}last=ts;
+try{if(video.videoWidth===0){raf=requestAnimationFrame(lp);return}cx.drawImage(video,0,0,cv.width,cv.height);
+det.detect(cv).then(function(r){if(r&&r.length>0&&r[0].rawValue&&r[0].rawValue.length>5&&scanning){scanning=false;fb();onDec(r[0].rawValue)}}).catch(function(){})}catch(e){}
+if(scanning)raf=requestAnimationFrame(lp)}raf=requestAnimationFrame(lp)}
 function stopScan(){scanning=false;if(raf)cancelAnimationFrame(raf)}
-async function manual(){if(video.videoWidth===0||!det)return;ctx.drawImage(video,0,0,canvas.width,canvas.height);
-var vs=[canvas,enh(canvas),crop(canvas,.55),bin(canvas)];
+
+async function manual(){if(video.videoWidth===0||!det)return;cx.drawImage(video,0,0,cv.width,cv.height);
+var vs=[cv,enh(cv),crop(cv,.55),bin(cv)];
 for(var i=0;i<vs.length;i++){try{var r=await det.detect(vs[i]);if(r&&r.length>0&&r[0].rawValue&&r[0].rawValue.length>5){fb();onDec(r[0].rawValue);return}}catch(e){}}
-setPill('err','Non détecté');setTimeout(function(){setPill('ok',(useNative?'Natif':'WASM')+' ✓')},2000)}
-async function decFile(file){var img=new Image;img.onload=async function(){canvas.width=img.naturalWidth;canvas.height=img.naturalHeight;ctx.drawImage(img,0,0);
-var vs=[canvas,enh(canvas),bin(canvas),crop(canvas,.6)];
+sp('err','Non détecté');setTimeout(function(){sp('ok',(nat?'Natif':'WASM')+' ✓')},2000)}
+
+async function decFile(file){var img=new Image;img.onload=async function(){cv.width=img.naturalWidth;cv.height=img.naturalHeight;cx.drawImage(img,0,0);
+var vs=[cv,enh(cv),bin(cv),crop(cv,.6)];
 for(var i=0;i<vs.length;i++){try{var r=await det.detect(vs[i]);if(r&&r.length>0&&r[0].rawValue&&r[0].rawValue.length>5){fb();onDec(r[0].rawValue);return}}catch(e){}}
-setPill('err','Non trouvé');setTimeout(function(){setPill('ok','Prêt')},2000)};img.src=URL.createObjectURL(file)}
+sp('err','Non trouvé');setTimeout(function(){sp('ok','Prêt')},2000)};img.src=URL.createObjectURL(file)}
+
 function enh(s){var c=document.createElement('canvas');c.width=s.width;c.height=s.height;var x=c.getContext('2d');x.filter='contrast(2) grayscale(1) brightness(1.1)';x.drawImage(s,0,0);return c}
 function crop(s,r){var sz=Math.min(s.width,s.height)*r,x=(s.width-sz)/2,y=(s.height-sz)/2;var c=document.createElement('canvas');c.width=sz;c.height=sz;c.getContext('2d').drawImage(s,x,y,sz,sz,0,0,sz,sz);return c}
-function bin(s){var c=document.createElement('canvas');c.width=s.width;c.height=s.height;var x=c.getContext('2d',{willReadFrequently:true});x.filter='contrast(3) grayscale(1) brightness(1.2)';x.drawImage(s,0,0);x.filter='none';var id=x.getImageData(0,0,c.width,c.height),d=id.data;for(var i=0;i<d.length;i+=4){var g=d[i]*.3+d[i+1]*.59+d[i+2]*.11;d[i]=d[i+1]=d[i+2]=g>128?255:0}x.putImageData(id,0,0);return c}
-// Result
-function onDec(raw){lastRaw=raw;stopScan();render(raw,parseGS1(raw));results.classList.add('open')}
-function closeR(){results.classList.remove('open');if(video.videoWidth>0){canvas.width=video.videoWidth;canvas.height=video.videoHeight}setTimeout(startScan,300)}
-// GS1 Parser
-function parseGS1(raw){var res={fields:[],isGS1:false},data=raw;
-if(data.indexOf(']d2')===0||data.indexOf(']Q3')===0||data.indexOf(']C1')===0)data=data.substring(3);
-while(data.length>0&&(data.charCodeAt(0)<=0x1F||data.charCodeAt(0)===232))data=data.substring(1);
-data=data.replace(/\((\d{2,4})\)/g,'$1');
-if(/^01\d{14}/.test(data)||/^\d{2}/.test(data))res.isGS1=true;
-var pos=0,mx=50;
-while(pos<data.length&&mx-->0){if(data.charCodeAt(pos)<=0x1F){pos++;continue}var ok=false;
-for(var a=0;a<AIS.length;a++){var d=AIS[a],c=d[0];if(data.substring(pos,pos+c.length)!==c)continue;pos+=c.length;var v='';
-if(d[2]>0){v=data.substring(pos,pos+d[2]);pos+=d[2]}else{var e=data.length;for(var vi=pos;vi<data.length;vi++){if(data.charCodeAt(vi)<=0x1F){e=vi;break}}v=data.substring(pos,e);pos=e}
-res.fields.push({ai:c,label:d[1],value:fmtV(c,v),raw:v});ok=true;break}
-if(!ok){if(data.substring(pos).length>0)res.fields.push({ai:'??',label:'Données',value:data.substring(pos),raw:data.substring(pos)});break}}return res}
+function bin(s){var c=document.createElement('canvas');c.width=s.width;c.height=s.height;var x=c.getContext('2d',{willReadFrequently:true});x.filter='contrast(3) grayscale(1) brightness(1.2)';x.drawImage(s,0,0);x.filter='none';var id=x.getImageData(0,0,c.width,c.height),d=id.data;for(var i=0;i<d.length;i+=4){var g=d[i]*.3+d[i+1]*.59+d[i+2]*.11;d[i]=d[i+1]=d[i+2]=g>128?255:0;}x.putImageData(id,0,0);return c}
+
+// ═══════════════════════════════════════
+// DECODE + LOOKUP
+// ═══════════════════════════════════════
+async function onDec(raw){
+  lastRaw=raw;stopScan();
+  var gs1=parseGS1(raw);
+  var medInfo=detectMedType(gs1);
+  // Render immediately with loading state
+  render(raw,gs1,medInfo);
+  resPanel.classList.add('open');
+  // Then try API lookup
+  if(medInfo.gtin||medInfo.cip13){
+    var res=await lookupMed(medInfo);
+    if(res){
+      medInfo.name=res.nom;
+      medInfo.form=res.forme;
+      medInfo.sub=res.titulaire;
+      if(res.especes)medInfo.especes=res.especes;
+      if(res.amm)medInfo.amm=res.amm;
+      // If we found it in vet DB but type was unknown, upgrade to vet
+      if(medInfo.type==='unknown'&&(res.especes||res.amm)){
+        medInfo.type='vet';medInfo.typeLabel='Médicament vétérinaire';medInfo.isVet=true;
+      }
+      render(raw,gs1,medInfo);
+    }
+  }
+}
+
+function closeR(){resPanel.classList.remove('open');if(video.videoWidth>0){cv.width=video.videoWidth;cv.height=video.videoHeight}setTimeout(startScan,300)}
+
+// ═══════════════════════════════════════
+// MEDICATION TYPE DETECTION
+// ═══════════════════════════════════════
+function detectMedType(gs1){
+  var info={type:'unknown',typeLabel:'Produit',cip13:null,gtin:null,isVet:false,name:null,form:null,sub:null};
+  var gtinField=fd(gs1.fields,'01');
+  if(!gtinField)return info;
+  var code=gtinField.raw;
+  var g13=code;
+  if(code.length===14&&code[0]==='0')g13=code.substring(1);
+  info.gtin=g13;
+
+  // ── French CIP13 (human): 3400 ──
+  if(g13.substring(0,4)==='3400'){
+    info.cip13=g13;
+    if(g13.substring(0,5)==='34009'){info.type='human';info.typeLabel='Médicament humain';}
+    else if(g13.substring(0,5)==='34008'){info.type='human';info.typeLabel='Médicament hospitalier';}
+    else if(g13.substring(0,5)==='34007'){info.type='device';info.typeLabel='Dispositif médical';}
+    else{info.type='pharma';info.typeLabel='Produit pharmaceutique FR';}
+  }
+  // ── French parapharmacie: 3401 ──
+  else if(g13.substring(0,4)==='3401'){
+    info.type='para';info.typeLabel='Parapharmacie';
+  }
+  // ── French veterinary prefixes ──
+  // GS1 France range 366-369 widely used by vet labs (Virbac, Ceva, Vetoquinol, Boehringer, etc.)
+  // Also 376x, 350x, 325x for some vet distributors
+  else if(/^(366|367|368|369|376|350|325)/.test(g13)){
+    info.type='vet';info.typeLabel='Médicament vétérinaire';info.isVet=true;
+  }
+  // ── Known vet manufacturer prefixes (EAN company codes) ──
+  // Virbac: 3597, Ceva: 3660, Vetoquinol: 3660/3597, Elanco: various, Dechra: 506/871
+  else if(/^(3597|3660|5060|5014|8710|8714|4015|4260)/.test(g13)){
+    info.type='vet';info.typeLabel='Médicament vétérinaire';info.isVet=true;
+  }
+  // ── Other heuristics ──
+  else{
+    var nhrn=fd(gs1.fields,'711')||fd(gs1.fields,'710')||fd(gs1.fields,'712');
+    if(nhrn){info.type='human';info.typeLabel='Médicament humain';info.cip13=nhrn.raw;}
+    else{info.type='unknown';info.typeLabel='Produit GS1';}
+  }
+  return info;
+}
+
+// ═══════════════════════════════════════
+// MEDICATION NAME LOOKUP
+// ═══════════════════════════════════════
+async function lookupMed(medInfo){
+  // ── Human medication: CIP13 lookup ──
+  if(medInfo.cip13&&!medInfo.isVet){
+    var human=await lookupHuman(medInfo.cip13);
+    if(human)return human;
+  }
+
+  // ── Veterinary or unknown: GTIN lookup ──
+  if(medInfo.gtin){
+    var vet=await lookupVet(medInfo.gtin);
+    if(vet)return vet;
+
+    // Also try Open Food Facts (has some pharma/vet products)
+    var off=await lookupOFF(medInfo.gtin);
+    if(off)return off;
+  }
+
+  return null;
+}
+
+// Human med: open-medicaments + BDPM
+async function lookupHuman(cip13){
+  try{
+    var r=await Promise.race([
+      fetch('https://api.open-medicaments.fr/api/v1/medicaments?query='+cip13+'&limit=1'),
+      new Promise(function(_,j){setTimeout(j,6000)})
+    ]);
+    if(r.ok){
+      var data=await r.json();
+      if(data&&data.length>0){
+        var med=data[0];
+        return{nom:med.denomination||med.nom||null,forme:med.formePharmaceutique||null,titulaire:med.titulaires?med.titulaires.join(', '):null};
+      }
+    }
+  }catch(e){}
+
+  try{
+    var r2=await Promise.race([
+      fetch('https://base-donnees-publique.medicaments.gouv.fr/api/v1/presentations?cipCode='+cip13),
+      new Promise(function(_,j){setTimeout(j,6000)})
+    ]);
+    if(r2.ok){var d2=await r2.json();if(d2&&d2.denomination)return{nom:d2.denomination,forme:d2.formePharmaceutique||null,titulaire:null}}
+  }catch(e){}
+  return null;
+}
+
+// Veterinary med: data.gouv.fr ANMV + IRCPv search
+async function lookupVet(gtin){
+  // Try data.gouv.fr dataset for veterinary medications (ANMV)
+  // The dataset "Base de données publique des médicaments vétérinaires" is available
+  try{
+    var r=await Promise.race([
+      fetch('https://data.anmv.anses.fr/api/explore/v2.1/catalog/datasets/liste-des-presentations-commercialisees-de-medicaments-veterinaires/records?where=code_gtin%3D%22'+gtin+'%22&limit=5'),
+      new Promise(function(_,j){setTimeout(j,8000)})
+    ]);
+    if(r.ok){
+      var data=await r.json();
+      if(data&&data.results&&data.results.length>0){
+        var rec=data.results[0];
+        return{
+          nom:rec.nom_du_medicament||rec.denomination||null,
+          forme:rec.forme_pharmaceutique||null,
+          titulaire:rec.titulaire_amm||rec.laboratoire||null,
+          amm:rec.numero_amm||null,
+          especes:rec.especes_de_destination||null
+        };
+      }
+    }
+  }catch(e){}
+
+  // Fallback: try search by GTIN on ANMV public API
+  try{
+    var r2=await Promise.race([
+      fetch('https://data.anmv.anses.fr/api/explore/v2.1/catalog/datasets/liste-des-presentations-commercialisees-de-medicaments-veterinaires/records?where=search(code_gtin%2C%22'+gtin+'%22)&limit=5'),
+      new Promise(function(_,j){setTimeout(j,8000)})
+    ]);
+    if(r2.ok){
+      var d2=await r2.json();
+      if(d2&&d2.results&&d2.results.length>0){
+        var rec2=d2.results[0];
+        return{
+          nom:rec2.nom_du_medicament||rec2.denomination||null,
+          forme:rec2.forme_pharmaceutique||null,
+          titulaire:rec2.titulaire_amm||rec2.laboratoire||null,
+          amm:rec2.numero_amm||null,
+          especes:rec2.especes_de_destination||null
+        };
+      }
+    }
+  }catch(e){}
+
+  // Try shorter GTIN (13 vs 14 digits)
+  if(gtin.length===14&&gtin[0]==='0'){
+    return await lookupVetShort(gtin.substring(1));
+  }
+  if(gtin.length===13){
+    return await lookupVetShort(gtin);
+  }
+  return null;
+}
+
+async function lookupVetShort(g13){
+  try{
+    var r=await Promise.race([
+      fetch('https://data.anmv.anses.fr/api/explore/v2.1/catalog/datasets/liste-des-presentations-commercialisees-de-medicaments-veterinaires/records?where=code_gtin%3D%22'+g13+'%22&limit=5'),
+      new Promise(function(_,j){setTimeout(j,8000)})
+    ]);
+    if(r.ok){
+      var data=await r.json();
+      if(data&&data.results&&data.results.length>0){
+        var rec=data.results[0];
+        return{
+          nom:rec.nom_du_medicament||rec.denomination||null,
+          forme:rec.forme_pharmaceutique||null,
+          titulaire:rec.titulaire_amm||rec.laboratoire||null,
+          amm:rec.numero_amm||null,
+          especes:rec.especes_de_destination||null
+        };
+      }
+    }
+  }catch(e){}
+  return null;
+}
+
+// Open Food Facts (covers some pharma/vet via EAN)
+async function lookupOFF(gtin){
+  var g13=gtin.length===14&&gtin[0]==='0'?gtin.substring(1):gtin;
+  try{
+    var r=await Promise.race([
+      fetch('https://world.openfoodfacts.org/api/v2/product/'+g13+'.json?fields=product_name,brands'),
+      new Promise(function(_,j){setTimeout(j,5000)})
+    ]);
+    if(r.ok){
+      var data=await r.json();
+      if(data&&data.status===1&&data.product){
+        var p=data.product;
+        if(p.product_name)return{nom:p.product_name,forme:null,titulaire:p.brands||null};
+      }
+    }
+  }catch(e){}
+  return null;
+}
+
+// ═══════════════════════════════════════
+// GS1 PARSER
+// ═══════════════════════════════════════
+function parseGS1(raw){
+  var res={fields:[],isGS1:false},data=raw;
+  if(data.indexOf(']d2')===0||data.indexOf(']Q3')===0||data.indexOf(']C1')===0)data=data.substring(3);
+  while(data.length>0&&(data.charCodeAt(0)<=0x1F||data.charCodeAt(0)===232))data=data.substring(1);
+  data=data.replace(/\((\d{2,4})\)/g,'$1');
+  if(/^01\d{14}/.test(data)||/^\d{2}/.test(data))res.isGS1=true;
+  var pos=0,mx=50;
+  while(pos<data.length&&mx-->0){
+    if(data.charCodeAt(pos)<=0x1F){pos++;continue}
+    var ok=false;
+    for(var a=0;a<AIS.length;a++){
+      var def=AIS[a],code=def[0];
+      if(data.substring(pos,pos+code.length)!==code)continue;
+      pos+=code.length;var v='';
+      if(def[2]>0){v=data.substring(pos,pos+def[2]);pos+=def[2]}
+      else{var e=data.length;for(var vi=pos;vi<data.length;vi++){if(data.charCodeAt(vi)<=0x1F){e=vi;break}}v=data.substring(pos,e);pos=e}
+      res.fields.push({ai:code,label:def[1],value:fmtV(code,v),raw:v});ok=true;break}
+    if(!ok){if(data.substring(pos).length>0)res.fields.push({ai:'??',label:'Données',value:data.substring(pos),raw:data.substring(pos)});break}
+  }
+  return res;
+}
+
 function fmtV(ai,v){if(('17'===ai||'11'===ai||'13'===ai||'15'===ai)&&v.length===6)return v.substring(4,6)+'/'+v.substring(2,4)+'/20'+v.substring(0,2);return v}
-function expStatus(fields){var f=null;for(var i=0;i<fields.length;i++){if(fields[i].ai==='17'){f=fields[i];break}}if(!f||f.raw.length!==6)return null;
-var y=2000+parseInt(f.raw.substring(0,2),10),m=parseInt(f.raw.substring(2,4),10)-1,d=parseInt(f.raw.substring(4,6),10)||28;
-var exp=new Date(y,m,d),diff=Math.ceil((exp-new Date)/864e5);
+function expSt(fields){var f=null;for(var i=0;i<fields.length;i++){if(fields[i].ai==='17'){f=fields[i];break}}if(!f||f.raw.length!==6)return null;
+var y=2000+parseInt(f.raw.substring(0,2),10),mo=parseInt(f.raw.substring(2,4),10)-1,d=parseInt(f.raw.substring(4,6),10)||28;
+var exp=new Date(y,mo,d),diff=Math.ceil((exp-new Date)/864e5);
 if(diff<0)return{t:'Expiré depuis '+Math.abs(diff)+' jours',c:'expired'};
 if(diff<90)return{t:'Expire dans '+diff+' jours',c:'warn'};
 return{t:'Valide — '+diff+' jours restants',c:'valid'}}
+
 var AIS=[['00','SSCC',18],['01','GTIN',14],['02','GTIN contenu',14],['10','N° Lot',0],['11','Date production',6],['13','Date emballage',6],['15','DLC optimale',6],['17','Date expiration',6],['20','Variante',2],['21','N° Série',0],['22','Données sec.',0],['235','Extension TPX',0],['240','ID compl.',0],['241','N° Client',0],['250','Série sec.',0],['253','ID global',0],['30','Quantité',0],['3100','Poids (kg)',6],['3101','Poids (kg)',6],['3102','Poids (kg)',6],['3103','Poids (kg)',6],['310','Poids (kg)',6],['320','Poids (lb)',6],['37','Nb unités',0],['400','N° Commande',0],['410','GLN dest.',13],['411','GLN fact.',13],['414','GLN lieu',13],['415','GLN émetteur',13],['421','CP dest.',0],['422','Pays origine',3],['710','NHRN DE',0],['711','NHRN FR (CIP)',0],['712','NHRN ES',0],['713','NHRN BR',0],['714','NHRN PT',0],['7003','Exp. date/heure',10],['91','Info interne',0],['92','Info interne',0],['93','Info interne',0]];
 AIS.sort(function(a,b){return b[0].length-a[0].length||a[0].localeCompare(b[0])});
-// Render
-function render(raw,gs1){var h='';
-if(gs1.isGS1&&gs1.fields.length>0){h+='<div class="badge">📦 GS1 DataMatrix</div>';
-var gtin=fd(gs1.fields,'01'),lot=fd(gs1.fields,'10'),exp=fd(gs1.fields,'17'),sn=fd(gs1.fields,'21'),es=expStatus(gs1.fields);
-h+='<div class="product-hero">';
-if(gtin)h+='<div class="gtin">GTIN '+esc(gtin.value)+'</div>';
-h+='<div class="title">Médicament vétérinaire</div><div class="meta-row">';
-if(lot)h+='<div class="meta-chip"><span>🏷</span><span><span class="lbl">Lot </span><strong>'+esc(lot.value)+'</strong></span></div>';
-if(exp)h+='<div class="meta-chip exp"><span>📅</span><span><span class="lbl">Exp </span><strong>'+esc(exp.value)+'</strong></span></div>';
-if(sn)h+='<div class="meta-chip"><span>🔢</span><span><span class="lbl">SN </span><strong>'+esc(sn.value)+'</strong></span></div>';
-h+='</div>';
-if(es)h+='<div class="expiry-bar '+es.c+'">'+(es.c==='valid'?'✅':es.c==='warn'?'⚠️':'❌')+' '+es.t+'</div>';
-h+='</div>';
-h+='<div class="section-title">Données GS1 complètes</div><div class="fields">';
-for(var i=0;i<gs1.fields.length;i++){var fi=gs1.fields[i];h+='<div class="field"><div class="field-left"><div class="field-ai">('+esc(fi.ai)+')</div><div class="field-label">'+esc(fi.label)+'</div></div><div class="field-val">'+esc(fi.value)+'</div></div>'}
-h+='</div>'}else{h+='<div class="badge" style="background:var(--bg3);color:var(--text-dim);border-color:var(--border)">DataMatrix</div>';
-h+='<div class="product-hero"><div class="title" style="font-size:1.05rem;word-break:break-all">'+esc(raw)+'</div></div>'}
-h+='<div class="section-title">Brut</div><div class="raw-block"><div class="raw-label">'+raw.length+' car.</div><pre>'+esc(fmtR(raw))+'</pre></div>';
-body.innerHTML=h}
+
+// ═══════════════════════════════════════
+// RENDER
+// ═══════════════════════════════════════
+function render(raw,gs1,med){
+  var h='';
+  if(gs1.isGS1&&gs1.fields.length>0){
+    var gtin=fd(gs1.fields,'01'),lot=fd(gs1.fields,'10'),exp=fd(gs1.fields,'17'),sn=fd(gs1.fields,'21'),es=expSt(gs1.fields);
+
+    // Hero
+    h+='<div class="hero">';
+    var bc=med.type==='human'?'human':med.type==='vet'?'vet':'unknown';
+    var icons={human:'💊',vet:'🐾',device:'🩺',para:'🧴',pharma:'💉',unknown:'📦'};
+    h+='<div class="type-badge '+bc+'">'+(icons[med.type]||'📦')+' '+esc(med.typeLabel)+'</div>';
+
+    if(gtin)h+='<div class="gtin">GTIN '+esc(gtin.value)+'</div>';
+
+    // Name
+    if(med.name){
+      h+='<div class="med-name">'+esc(med.name)+'</div>';
+      if(med.form)h+='<div class="med-sub">'+esc(med.form)+'</div>';
+      if(med.sub)h+='<div class="med-sub" style="font-size:.68rem;margin-bottom:4px">'+esc(med.sub)+'</div>';
+      if(med.especes)h+='<div class="med-sub" style="font-size:.72rem;margin-bottom:4px">🐾 Espèces : <strong style="color:var(--text)">'+esc(med.especes)+'</strong></div>';
+      if(med.amm)h+='<div class="med-sub" style="font-size:.66rem">AMM n° '+esc(med.amm)+'</div>';
+    }else if(med.gtin){
+      h+='<div class="med-loading">⏳ Recherche du nom…</div>';
+    }else{
+      h+='<div class="med-name">Produit scanné</div>';
+    }
+
+    // Meta chips
+    h+='<div class="meta">';
+    if(lot)h+='<div class="chip"><span>🏷</span><span><span class="lb">Lot </span><strong>'+esc(lot.value)+'</strong></span></div>';
+    if(exp)h+='<div class="chip exp"><span>📅</span><span><span class="lb">Exp </span><strong>'+esc(exp.value)+'</strong></span></div>';
+    if(sn)h+='<div class="chip"><span>🔢</span><span><span class="lb">SN </span><strong>'+esc(sn.value)+'</strong></span></div>';
+    h+='</div>';
+
+    if(es)h+='<div class="exp-bar '+es.c+'">'+(es.c==='valid'?'✅':es.c==='warn'?'⚠️':'❌')+' '+es.t+'</div>';
+    h+='</div>';
+
+    // Fields
+    h+='<div class="stitle">Données GS1</div><div class="fields">';
+    for(var i=0;i<gs1.fields.length;i++){var fi=gs1.fields[i];
+      h+='<div class="fd"><div class="fd-l"><div class="fd-ai">('+esc(fi.ai)+')</div><div class="fd-lb">'+esc(fi.label)+'</div></div><div class="fd-v">'+esc(fi.value)+'</div></div>'}
+    h+='</div>';
+
+  }else{
+    h+='<div class="hero"><div class="type-badge unknown">📦 DataMatrix</div>';
+    h+='<div class="med-name" style="word-break:break-all">'+esc(raw)+'</div></div>';
+  }
+
+  h+='<div class="stitle">Brut</div><div class="raw"><div class="raw-lb">'+raw.length+' car.</div><pre>'+esc(fmtR(raw))+'</pre></div>';
+  resBody.innerHTML=h;
+}
+
 function fd(f,ai){for(var i=0;i<f.length;i++){if(f[i].ai===ai)return f[i]}return null}
 function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
 function fmtR(s){return s.replace(/[\x00-\x1F]/g,function(c){var n=c.charCodeAt(0);return{29:'⟨GS⟩',30:'⟨RS⟩',31:'⟨US⟩'}[n]||'⟨'+n.toString(16).padStart(2,'0')+'⟩'})}
-}catch(e){setPill('err','Crash');console.error(e)}})();
-if('serviceWorker' in navigator){navigator.serviceWorker.getRegistrations().then(function(rs){rs.forEach(function(r){r.unregister()});setTimeout(function(){navigator.serviceWorker.register('sw.js').catch(function(){})},500)})}
+
+}catch(e){sp('err','Crash');console.error(e)}})();
+if('serviceWorker'in navigator){navigator.serviceWorker.getRegistrations().then(function(rs){rs.forEach(function(r){r.unregister()});setTimeout(function(){navigator.serviceWorker.register('sw.js').catch(function(){})},500)})}
 </script>
 </body>
 </html>

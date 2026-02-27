@@ -1,4 +1,4 @@
-const CACHE_NAME = 'vetscan-v2';
+const CACHE_NAME = 'infravetscan-v2';
 const ASSETS = ['/index.html', '/manifest.json'];
 
 self.addEventListener('install', event => {
