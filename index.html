@@ -220,24 +220,23 @@ async function onDec(raw){
   lastRaw=raw;stopScan();
   var gs1=parseGS1(raw);
   var medInfo=detectMedType(gs1);
-  // Render immediately with loading state
+  medInfo.lookupState='loading';
   render(raw,gs1,medInfo);
   resPanel.classList.add('open');
-  // Then try API lookup
   if(medInfo.gtin||medInfo.cip13){
     var res=await lookupMed(medInfo);
     if(res){
-      medInfo.name=res.nom;
-      medInfo.form=res.forme;
-      medInfo.sub=res.titulaire;
+      medInfo.name=res.nom;medInfo.form=res.forme;medInfo.sub=res.titulaire;
       if(res.especes)medInfo.especes=res.especes;
       if(res.amm)medInfo.amm=res.amm;
-      // If we found it in vet DB but type was unknown, upgrade to vet
       if(medInfo.type==='unknown'&&(res.especes||res.amm)){
         medInfo.type='vet';medInfo.typeLabel='Médicament vétérinaire';medInfo.isVet=true;
       }
-      render(raw,gs1,medInfo);
+      medInfo.lookupState='found';
+    }else{
+      medInfo.lookupState='notfound';
     }
+    render(raw,gs1,medInfo);
   }
 }
 
@@ -255,30 +254,20 @@ function detectMedType(gs1){
   if(code.length===14&&code[0]==='0')g13=code.substring(1);
   info.gtin=g13;
 
-  // ── French CIP13 (human): 3400 ──
-  if(g13.substring(0,4)==='3400'){
+  // All French pharma CIP13 start with 340
+  if(/^340[0-9]/.test(g13)){
     info.cip13=g13;
     if(g13.substring(0,5)==='34009'){info.type='human';info.typeLabel='Médicament humain';}
     else if(g13.substring(0,5)==='34008'){info.type='human';info.typeLabel='Médicament hospitalier';}
     else if(g13.substring(0,5)==='34007'){info.type='device';info.typeLabel='Dispositif médical';}
+    else if(g13.substring(0,4)==='3401'){info.type='human';info.typeLabel='Médicament humain';}
     else{info.type='pharma';info.typeLabel='Produit pharmaceutique FR';}
   }
-  // ── French parapharmacie: 3401 ──
-  else if(g13.substring(0,4)==='3401'){
-    info.type='para';info.typeLabel='Parapharmacie';
-  }
-  // ── French veterinary prefixes ──
-  // GS1 France range 366-369 widely used by vet labs (Virbac, Ceva, Vetoquinol, Boehringer, etc.)
-  // Also 376x, 350x, 325x for some vet distributors
-  else if(/^(366|367|368|369|376|350|325)/.test(g13)){
+  // French veterinary — EAN company prefixes used by vet pharma labs
+  else if(/^(366|367|368|369|376|350|325|3597|3660|5060|5014|8710|8714|4015|4260)/.test(g13)){
     info.type='vet';info.typeLabel='Médicament vétérinaire';info.isVet=true;
   }
-  // ── Known vet manufacturer prefixes (EAN company codes) ──
-  // Virbac: 3597, Ceva: 3660, Vetoquinol: 3660/3597, Elanco: various, Dechra: 506/871
-  else if(/^(3597|3660|5060|5014|8710|8714|4015|4260)/.test(g13)){
-    info.type='vet';info.typeLabel='Médicament vétérinaire';info.isVet=true;
-  }
-  // ── Other heuristics ──
+  // NHRN AI present → human
   else{
     var nhrn=fd(gs1.fields,'711')||fd(gs1.fields,'710')||fd(gs1.fields,'712');
     if(nhrn){info.type='human';info.typeLabel='Médicament humain';info.cip13=nhrn.raw;}
@@ -288,149 +277,69 @@ function detectMedType(gs1){
 }
 
 // ═══════════════════════════════════════
-// MEDICATION NAME LOOKUP
+// MEDICATION NAME LOOKUP — tries all APIs
 // ═══════════════════════════════════════
 async function lookupMed(medInfo){
-  // ── Human medication: CIP13 lookup ──
-  if(medInfo.cip13&&!medInfo.isVet){
-    var human=await lookupHuman(medInfo.cip13);
-    if(human)return human;
+  var g13=medInfo.gtin;
+  var g14=g13.length===13?'0'+g13:g13;
+  if(g13.length===14&&g13[0]==='0')g13=g13.substring(1);
+  var results=[];
+
+  // Fire all lookups in parallel for speed
+  var promises=[];
+
+  // 1. Open Medicaments (human CIP13) — CORS OK
+  if(medInfo.cip13){
+    promises.push(tryFetch('https://api.open-medicaments.fr/api/v1/medicaments?query='+medInfo.cip13+'&limit=1',function(data){
+      if(data&&data.length>0){var m=data[0];return{nom:m.denomination||m.nom||null,forme:m.formePharmaceutique||null,titulaire:m.titulaires?m.titulaires.join(', '):null};}return null;
+    }));
   }
 
-  // ── Veterinary or unknown: GTIN lookup ──
-  if(medInfo.gtin){
-    var vet=await lookupVet(medInfo.gtin);
-    if(vet)return vet;
+  // 2. ANMV/ANSES vet database — Opendatasoft, CORS OK
+  promises.push(tryFetch('https://data.anmv.anses.fr/api/explore/v2.1/catalog/datasets/liste-des-presentations-commercialisees-de-medicaments-veterinaires/records?limit=5&where=code_gtin%3D%22'+g13+'%22+OR+code_gtin%3D%22'+g14+'%22',function(data){
+    if(data&&data.results&&data.results.length>0){var r=data.results[0];
+      return{nom:r.nom_du_medicament||r.denomination||null,forme:r.forme_pharmaceutique||null,titulaire:r.titulaire_amm||r.laboratoire||null,amm:r.numero_amm||null,especes:r.especes_de_destination||null};}return null;
+  }));
 
-    // Also try Open Food Facts (has some pharma/vet products)
-    var off=await lookupOFF(medInfo.gtin);
-    if(off)return off;
-  }
+  // 3. Open Food Facts — definitely CORS OK
+  promises.push(tryFetch('https://world.openfoodfacts.org/api/v2/product/'+g13+'.json?fields=product_name,brands',function(data){
+    if(data&&data.status===1&&data.product&&data.product.product_name){
+      return{nom:data.product.product_name,forme:null,titulaire:data.product.brands||null};}return null;
+  }));
 
-  return null;
-}
+  // 4. Open Beauty Facts (for parapharma) — CORS OK
+  promises.push(tryFetch('https://world.openbeautyfacts.org/api/v2/product/'+g13+'.json?fields=product_name,brands',function(data){
+    if(data&&data.status===1&&data.product&&data.product.product_name){
+      return{nom:data.product.product_name,forme:null,titulaire:data.product.brands||null};}return null;
+  }));
 
-// Human med: open-medicaments + BDPM
-async function lookupHuman(cip13){
-  try{
-    var r=await Promise.race([
-      fetch('https://api.open-medicaments.fr/api/v1/medicaments?query='+cip13+'&limit=1'),
-      new Promise(function(_,j){setTimeout(j,6000)})
-    ]);
-    if(r.ok){
-      var data=await r.json();
-      if(data&&data.length>0){
-        var med=data[0];
-        return{nom:med.denomination||med.nom||null,forme:med.formePharmaceutique||null,titulaire:med.titulaires?med.titulaires.join(', '):null};
-      }
+  // 5. Open Pet Food Facts (for vet products) — CORS OK
+  promises.push(tryFetch('https://world.openpetfoodfacts.org/api/v2/product/'+g13+'.json?fields=product_name,brands',function(data){
+    if(data&&data.status===1&&data.product&&data.product.product_name){
+      return{nom:data.product.product_name,forme:null,titulaire:data.product.brands||null};}return null;
+  }));
+
+  // Wait for all (with individual timeouts)
+  var settled=await Promise.allSettled(promises);
+  for(var i=0;i<settled.length;i++){
+    if(settled[i].status==='fulfilled'&&settled[i].value){
+      return settled[i].value;
     }
-  }catch(e){}
-
-  try{
-    var r2=await Promise.race([
-      fetch('https://base-donnees-publique.medicaments.gouv.fr/api/v1/presentations?cipCode='+cip13),
-      new Promise(function(_,j){setTimeout(j,6000)})
-    ]);
-    if(r2.ok){var d2=await r2.json();if(d2&&d2.denomination)return{nom:d2.denomination,forme:d2.formePharmaceutique||null,titulaire:null}}
-  }catch(e){}
-  return null;
-}
-
-// Veterinary med: data.gouv.fr ANMV + IRCPv search
-async function lookupVet(gtin){
-  // Try data.gouv.fr dataset for veterinary medications (ANMV)
-  // The dataset "Base de données publique des médicaments vétérinaires" is available
-  try{
-    var r=await Promise.race([
-      fetch('https://data.anmv.anses.fr/api/explore/v2.1/catalog/datasets/liste-des-presentations-commercialisees-de-medicaments-veterinaires/records?where=code_gtin%3D%22'+gtin+'%22&limit=5'),
-      new Promise(function(_,j){setTimeout(j,8000)})
-    ]);
-    if(r.ok){
-      var data=await r.json();
-      if(data&&data.results&&data.results.length>0){
-        var rec=data.results[0];
-        return{
-          nom:rec.nom_du_medicament||rec.denomination||null,
-          forme:rec.forme_pharmaceutique||null,
-          titulaire:rec.titulaire_amm||rec.laboratoire||null,
-          amm:rec.numero_amm||null,
-          especes:rec.especes_de_destination||null
-        };
-      }
-    }
-  }catch(e){}
-
-  // Fallback: try search by GTIN on ANMV public API
-  try{
-    var r2=await Promise.race([
-      fetch('https://data.anmv.anses.fr/api/explore/v2.1/catalog/datasets/liste-des-presentations-commercialisees-de-medicaments-veterinaires/records?where=search(code_gtin%2C%22'+gtin+'%22)&limit=5'),
-      new Promise(function(_,j){setTimeout(j,8000)})
-    ]);
-    if(r2.ok){
-      var d2=await r2.json();
-      if(d2&&d2.results&&d2.results.length>0){
-        var rec2=d2.results[0];
-        return{
-          nom:rec2.nom_du_medicament||rec2.denomination||null,
-          forme:rec2.forme_pharmaceutique||null,
-          titulaire:rec2.titulaire_amm||rec2.laboratoire||null,
-          amm:rec2.numero_amm||null,
-          especes:rec2.especes_de_destination||null
-        };
-      }
-    }
-  }catch(e){}
-
-  // Try shorter GTIN (13 vs 14 digits)
-  if(gtin.length===14&&gtin[0]==='0'){
-    return await lookupVetShort(gtin.substring(1));
-  }
-  if(gtin.length===13){
-    return await lookupVetShort(gtin);
   }
   return null;
 }
 
-async function lookupVetShort(g13){
-  try{
-    var r=await Promise.race([
-      fetch('https://data.anmv.anses.fr/api/explore/v2.1/catalog/datasets/liste-des-presentations-commercialisees-de-medicaments-veterinaires/records?where=code_gtin%3D%22'+g13+'%22&limit=5'),
-      new Promise(function(_,j){setTimeout(j,8000)})
-    ]);
-    if(r.ok){
-      var data=await r.json();
-      if(data&&data.results&&data.results.length>0){
-        var rec=data.results[0];
-        return{
-          nom:rec.nom_du_medicament||rec.denomination||null,
-          forme:rec.forme_pharmaceutique||null,
-          titulaire:rec.titulaire_amm||rec.laboratoire||null,
-          amm:rec.numero_amm||null,
-          especes:rec.especes_de_destination||null
-        };
-      }
-    }
-  }catch(e){}
-  return null;
-}
-
-// Open Food Facts (covers some pharma/vet via EAN)
-async function lookupOFF(gtin){
-  var g13=gtin.length===14&&gtin[0]==='0'?gtin.substring(1):gtin;
-  try{
-    var r=await Promise.race([
-      fetch('https://world.openfoodfacts.org/api/v2/product/'+g13+'.json?fields=product_name,brands'),
-      new Promise(function(_,j){setTimeout(j,5000)})
-    ]);
-    if(r.ok){
-      var data=await r.json();
-      if(data&&data.status===1&&data.product){
-        var p=data.product;
-        if(p.product_name)return{nom:p.product_name,forme:null,titulaire:p.brands||null};
-      }
-    }
-  }catch(e){}
-  return null;
+function tryFetch(url,parser){
+  return new Promise(function(resolve){
+    var timeout=setTimeout(function(){resolve(null)},8000);
+    fetch(url).then(function(r){
+      if(!r.ok){clearTimeout(timeout);resolve(null);return}
+      return r.json();
+    }).then(function(data){
+      clearTimeout(timeout);
+      try{resolve(parser(data))}catch(e){resolve(null)}
+    }).catch(function(){clearTimeout(timeout);resolve(null)});
+  });
 }
 
 // ═══════════════════════════════════════
@@ -492,8 +401,10 @@ function render(raw,gs1,med){
       if(med.sub)h+='<div class="med-sub" style="font-size:.68rem;margin-bottom:4px">'+esc(med.sub)+'</div>';
       if(med.especes)h+='<div class="med-sub" style="font-size:.72rem;margin-bottom:4px">🐾 Espèces : <strong style="color:var(--text)">'+esc(med.especes)+'</strong></div>';
       if(med.amm)h+='<div class="med-sub" style="font-size:.66rem">AMM n° '+esc(med.amm)+'</div>';
-    }else if(med.gtin){
+    }else if(med.lookupState==='loading'){
       h+='<div class="med-loading">⏳ Recherche du nom…</div>';
+    }else if(med.lookupState==='notfound'){
+      h+='<div class="med-sub" style="color:var(--text-dim)">Nom non trouvé dans les bases</div>';
     }else{
       h+='<div class="med-name">Produit scanné</div>';
     }
