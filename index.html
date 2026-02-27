@@ -297,42 +297,64 @@ const DBG = {
   }
 
   // ─── STEP 1b: Load ZBar if needed ───
+  let zbarScanFn = null; // Will hold the scanImageData function
+
   if (!useNative) {
     DBG.info('── Step 1b: ZBar WASM ──');
     if (typeof WebAssembly !== 'object') {
       DBG.err('WebAssembly non supporté — scan impossible');
     } else {
       engineBadge.textContent = 'WASM…';
-      try {
-        DBG.info('Loading zbar.wasm from jsdelivr…');
-        const script = document.createElement('script');
-        script.src = 'https://cdn.jsdelivr.net/npm/zbar.wasm@2.1.0/dist/index.js';
-        document.head.appendChild(script);
 
-        const loaded = await Promise.race([
-          new Promise(r => { script.onload = () => r('loaded'); script.onerror = (e) => r('error'); }),
-          new Promise(r => setTimeout(() => r('timeout'), 10000)),
-        ]);
+      // zbar.wasm v2 is an ES module — must use dynamic import()
+      const cdns = [
+        'https://cdn.jsdelivr.net/npm/zbar.wasm@2.1.0/dist/index.js',
+        'https://unpkg.com/zbar.wasm@2.1.0/dist/index.js',
+      ];
 
-        DBG.info('Script result: ' + loaded);
+      for (const url of cdns) {
+        if (useZbar) break;
+        try {
+          DBG.info('import() from ' + url.split('/')[2] + '…');
+          const module = await Promise.race([
+            import(url),
+            new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 12000)),
+          ]);
 
-        if (loaded === 'loaded' && window.zbarWasm) {
-          useZbar = true;
-          engineBadge.textContent = 'WASM';
-          engineBadge.style.color = 'var(--warning)';
-          DBG.ok('✓ ZBar WASM ready');
-          DBG.info('zbarWasm keys: ' + Object.keys(window.zbarWasm).join(', '));
-        } else if (loaded === 'loaded' && !window.zbarWasm) {
-          DBG.err('Script loaded but window.zbarWasm is ' + typeof window.zbarWasm);
-          DBG.info('window keys with zbar: ' + Object.keys(window).filter(k => k.toLowerCase().includes('zbar')).join(', '));
-        } else if (loaded === 'timeout') {
-          DBG.err('ZBar CDN timeout (10s) — réseau lent ?');
-          if (isIOS) DBG.warn('iOS: vérifiez que jsdelivr.net n\'est pas bloqué');
-        } else {
-          DBG.err('ZBar script load error');
+          DBG.info('Module keys: ' + Object.keys(module).join(', '));
+
+          // Find scanImageData — could be default export or named
+          if (typeof module.scanImageData === 'function') {
+            zbarScanFn = module.scanImageData;
+          } else if (module.default?.scanImageData) {
+            zbarScanFn = module.default.scanImageData;
+          } else if (typeof module.getDefaultScanner === 'function') {
+            const scanner = await module.getDefaultScanner();
+            zbarScanFn = (imgData) => scanner.scan(imgData);
+            DBG.info('Using getDefaultScanner()');
+          } else {
+            // Try to find any function that looks like a scanner
+            for (const key of Object.keys(module)) {
+              DBG.info('  module.' + key + ' = ' + typeof module[key]);
+              if (typeof module[key] === 'function' && key.toLowerCase().includes('scan')) {
+                zbarScanFn = module[key];
+                DBG.info('  → using module.' + key);
+                break;
+              }
+            }
+          }
+
+          if (zbarScanFn) {
+            useZbar = true;
+            engineBadge.textContent = 'WASM';
+            engineBadge.style.color = 'var(--warning)';
+            DBG.ok('✓ ZBar WASM ready (scanImageData found)');
+          } else {
+            DBG.warn('Module loaded but no scanImageData found');
+          }
+        } catch(e) {
+          DBG.warn('import() failed: ' + e.message);
         }
-      } catch(e) {
-        DBG.err('ZBar error: ' + e.message);
       }
 
       if (!useZbar) {
@@ -547,21 +569,24 @@ const DBG = {
         if (results.length > 0 && results[0].rawValue?.length > 5) return results[0].rawValue;
       } catch(e) {}
     }
-    if (useZbar && window.zbarWasm) {
+    if (useZbar && zbarScanFn) {
       try {
         const ctx = canvas.getContext('2d', { willReadFrequently: true });
         const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-        const symbols = await window.zbarWasm.scanImageData(imgData);
+        const symbols = await zbarScanFn(imgData);
         if (symbols?.length > 0) {
           for (const sym of symbols) {
             let val = '';
             if (typeof sym.decode === 'function') val = sym.decode();
             else if (sym.data instanceof Uint8Array) val = new TextDecoder('iso-8859-1').decode(sym.data);
             else if (typeof sym.data === 'string') val = sym.data;
+            else if (sym.value) val = sym.value;
             if (val?.length > 5) return val;
           }
         }
-      } catch(e) {}
+      } catch(e) {
+        DBG.warn('ZBar decode error: ' + e.message);
+      }
     }
     return null;
   }
