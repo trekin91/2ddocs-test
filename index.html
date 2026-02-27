@@ -462,16 +462,18 @@ function setPill(type, text) {
   // GS1 DATAMATRIX PARSER
   // ═══════════════════════════════════════
   function isGS1(raw) {
-    // GS1 DataMatrix starts with ]d2 (symbology identifier) or FNC1 (0xE8/232)
-    // or contains recognizable AI patterns like (01), 01 + 14 digits
+    // GS1 DataMatrix starts with ]d2 or FNC1 (0xE8/232) or GS (0x1D/29)
     if (raw.indexOf(']d2') === 0 || raw.indexOf(']Q3') === 0 || raw.indexOf(']C1') === 0) return true;
-    if (raw.charCodeAt(0) === 232) return true; // FNC1
-
-    // Heuristic: starts with AI 01 (GTIN) — 01 + 14 digits
+    var c0 = raw.charCodeAt(0);
+    if (c0 === 232 || c0 === 0x1D || c0 === 0x1E || c0 === 0x1F) {
+      // Check if after the control char it looks like GS1
+      var after = raw.substring(1);
+      if (/^01\d{14}/.test(after)) return true;
+      if (/^\d{2}/.test(after)) return true; // Starts with any AI
+    }
+    // Direct AI patterns
     if (/^01\d{14}/.test(raw)) return true;
-    // Or starts with (01)
     if (/^\(01\)/.test(raw)) return true;
-
     return false;
   }
 
@@ -483,7 +485,10 @@ function setPill(type, text) {
     if (data.indexOf(']d2') === 0 || data.indexOf(']Q3') === 0 || data.indexOf(']C1') === 0) {
       data = data.substring(3);
     }
-    if (data.charCodeAt(0) === 232) data = data.substring(1); // FNC1
+    // Strip leading FNC1 or GS or control chars
+    while (data.length > 0 && (data.charCodeAt(0) <= 0x1F || data.charCodeAt(0) === 232)) {
+      data = data.substring(1);
+    }
 
     // Strip parentheses format: (01)12345 → 0112345
     data = data.replace(/\((\d{2,4})\)/g, '$1');
