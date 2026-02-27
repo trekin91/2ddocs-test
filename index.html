@@ -283,28 +283,45 @@ async function lookupMed(medInfo){
   var g13=medInfo.gtin;
   if(!g13)return null;
   if(g13.length===14&&g13[0]==='0')g13=g13.substring(1);
-  var g14=g13.length===13?'0'+g13:g13;
   var promises=[];
 
-  // 1. medicaments-api.giygas.dev — CIP13 lookup (human meds, CORS OK)
-  if(medInfo.cip13||/^340/.test(g13)){
-    var cip=medInfo.cip13||g13;
-    promises.push(tryFetch('https://medicaments-api.giygas.dev/v1/medicaments?cip13='+cip,function(data){
-      if(data&&data.length>0){var m=data[0];
-        return{nom:m.elementPharmaceutique||m.denomination||null,forme:m.formePharmaceutique||null,titulaire:m.titulaire||null};}return null;
+  // 1. medicaments-api.giygas.dev — ?cip= endpoint (returns single object)
+  if(/^340/.test(g13)){
+    promises.push(tryFetch('https://medicaments-api.giygas.dev/v1/medicaments?cip='+g13,function(data){
+      if(!data)return null;
+      // Single object response
+      if(data.elementPharmaceutique||data.denomination){
+        return{nom:data.elementPharmaceutique||data.denomination||null,forme:data.formePharmaceutique||null,titulaire:data.titulaire||null};
+      }
+      // Or array response
+      if(Array.isArray(data)&&data.length>0){var m=data[0];
+        return{nom:m.elementPharmaceutique||m.denomination||null,forme:m.formePharmaceutique||null,titulaire:m.titulaire||null};}
+      return null;
+    }));
+    // Also try search endpoint as fallback
+    promises.push(tryFetch('https://medicaments-api.giygas.dev/v1/medicaments?search='+g13,function(data){
+      if(Array.isArray(data)&&data.length>0){var m=data[0];
+        return{nom:m.elementPharmaceutique||m.denomination||null,forme:m.formePharmaceutique||null,titulaire:m.titulaire||null};}
+      if(data&&data.data&&data.data.length>0){var m2=data.data[0];
+        return{nom:m2.elementPharmaceutique||m2.denomination||null,forme:m2.formePharmaceutique||null,titulaire:m2.titulaire||null};}
+      return null;
     }));
   }
 
-  // 2. bdpmgf.vedielaute.fr — BDPM mirror (human meds, CORS OK)
-  promises.push(tryFetch('https://bdpmgf.vedielaute.fr/api/medicaments/presentations?q='+g13+'&limit=5',function(data){
+  // 2. bdpmgf.vedielaute.fr — presentations search (response: {data:[...],pagination,metadata})
+  promises.push(tryFetch('https://bdpmgf.vedielaute.fr/api/medicaments/presentations?q=*'+g13+'*&limit=3',function(data){
     if(data&&data.data&&data.data.length>0){var p=data.data[0];
       return{nom:p.denomination||p.libelle||null,forme:null,titulaire:null};}
-    if(data&&Array.isArray(data)&&data.length>0){var p2=data[0];
-      return{nom:p2.denomination||p2.libelle||null,forme:null,titulaire:null};}
+    return null;
+  }));
+  // Also search endpoint
+  promises.push(tryFetch('https://bdpmgf.vedielaute.fr/api/medicaments/search?q='+g13+'&limit=3',function(data){
+    if(data&&data.data&&data.data.length>0){var s=data.data[0];
+      return{nom:s.denomination||s.elementPharmaceutique||s.libelle||null,forme:s.formePharmaceutique||null,titulaire:s.titulaire||null};}
     return null;
   }));
 
-  // 3. Open Food Facts (universal EAN lookup, CORS OK)
+  // 3. Open Food Facts (universal EAN, CORS OK)
   promises.push(tryFetch('https://world.openfoodfacts.org/api/v2/product/'+g13+'.json?fields=product_name,brands',function(data){
     if(data&&data.status===1&&data.product&&data.product.product_name){
       return{nom:data.product.product_name,forme:null,titulaire:data.product.brands||null};}return null;
@@ -316,7 +333,7 @@ async function lookupMed(medInfo){
       return{nom:data.product.product_name,forme:null,titulaire:data.product.brands||null};}return null;
   }));
 
-  // 5. Open Pet Food Facts (vet products, CORS OK)
+  // 5. Open Pet Food Facts (vet, CORS OK)
   promises.push(tryFetch('https://world.openpetfoodfacts.org/api/v2/product/'+g13+'.json?fields=product_name,brands',function(data){
     if(data&&data.status===1&&data.product&&data.product.product_name){
       return{nom:data.product.product_name,forme:null,titulaire:data.product.brands||null};}return null;
