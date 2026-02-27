@@ -277,71 +277,74 @@ function detectMedType(gs1){
 }
 
 // ═══════════════════════════════════════
+// ANMV GTIN database for veterinary meds (loaded once)
+var anmvDb=null,anmvLoading=null;
+function loadAnmvDb(){
+  if(anmvDb)return Promise.resolve(anmvDb);
+  if(anmvLoading)return anmvLoading;
+  anmvLoading=fetch('anmv_gtin.json').then(function(r){return r.json()}).then(function(d){anmvDb=d;return d}).catch(function(){anmvDb={};return{}});
+  return anmvLoading;
+}
+// preload on page start
+loadAnmvDb();
+
 // MEDICATION NAME LOOKUP — tries all APIs
 // ═══════════════════════════════════════
 async function lookupMed(medInfo){
-  var g13=medInfo.gtin;
-  if(!g13)return null;
-  if(g13.length===14&&g13[0]==='0')g13=g13.substring(1);
-  var promises=[];
+  var g14=medInfo.gtin;
+  if(!g14)return null;
+  // Ensure 14-digit GTIN for vet DB lookup
+  if(g14.length===13)g14='0'+g14;
+  var g13=g14.length===14&&g14[0]==='0'?g14.substring(1):g14;
 
-  // 1. medicaments-api.giygas.dev — ?cip= endpoint (returns single object)
-  if(/^340/.test(g13)){
-    promises.push(tryFetch('https://medicaments-api.giygas.dev/v1/medicaments?cip='+g13,function(data){
-      if(!data)return null;
-      // Single object response
-      if(data.elementPharmaceutique||data.denomination){
-        return{nom:data.elementPharmaceutique||data.denomination||null,forme:data.formePharmaceutique||null,titulaire:data.titulaire||null};
-      }
-      // Or array response
-      if(Array.isArray(data)&&data.length>0){var m=data[0];
-        return{nom:m.elementPharmaceutique||m.denomination||null,forme:m.formePharmaceutique||null,titulaire:m.titulaire||null};}
-      return null;
-    }));
-    // Also try search endpoint as fallback
-    promises.push(tryFetch('https://medicaments-api.giygas.dev/v1/medicaments?search='+g13,function(data){
-      if(Array.isArray(data)&&data.length>0){var m=data[0];
-        return{nom:m.elementPharmaceutique||m.denomination||null,forme:m.formePharmaceutique||null,titulaire:m.titulaire||null};}
-      if(data&&data.data&&data.data.length>0){var m2=data.data[0];
-        return{nom:m2.elementPharmaceutique||m2.denomination||null,forme:m2.formePharmaceutique||null,titulaire:m2.titulaire||null};}
-      return null;
-    }));
+  // Vet meds: lookup in embedded ANMV database
+  if(medInfo.isVet){
+    var db=await loadAnmvDb();
+    var entry=db[g14]||db[g13];
+    if(entry)return{nom:entry.n,forme:entry.p||null,titulaire:entry.t||null};
+    return null;
   }
 
-  // 2. bdpmgf.vedielaute.fr — presentations search (response: {data:[...],pagination,metadata})
+  var promises=[];
+
+  // 1. bdpmgf.vedielaute.fr — BDPM mirror (CORS OK, no auth)
+  // presentations search with wildcard on CIP13
   promises.push(tryFetch('https://bdpmgf.vedielaute.fr/api/medicaments/presentations?q=*'+g13+'*&limit=3',function(data){
     if(data&&data.data&&data.data.length>0){var p=data.data[0];
       return{nom:p.denomination||p.libelle||null,forme:null,titulaire:null};}
     return null;
   }));
-  // Also search endpoint
+  // global search
   promises.push(tryFetch('https://bdpmgf.vedielaute.fr/api/medicaments/search?q='+g13+'&limit=3',function(data){
     if(data&&data.data&&data.data.length>0){var s=data.data[0];
       return{nom:s.denomination||s.elementPharmaceutique||s.libelle||null,forme:s.formePharmaceutique||null,titulaire:s.titulaire||null};}
     return null;
   }));
 
-  // 3. Open Food Facts (universal EAN, CORS OK)
+  // 2. medicaments-api.giygas.dev — multiple param attempts
+  if(/^340/.test(g13)){
+    promises.push(tryFetch('https://medicaments-api.giygas.dev/v1/medicaments?cip='+g13,function(data){
+      if(!data)return null;
+      if(data.elementPharmaceutique)return{nom:data.elementPharmaceutique,forme:data.formePharmaceutique||null,titulaire:data.titulaire||null};
+      if(Array.isArray(data)&&data.length>0){var m=data[0];return{nom:m.elementPharmaceutique||m.denomination||null,forme:m.formePharmaceutique||null,titulaire:m.titulaire||null};}
+      return null;
+    }));
+    promises.push(tryFetch('https://medicaments-api.giygas.dev/v1/medicaments?search='+g13,function(data){
+      if(Array.isArray(data)&&data.length>0){var m=data[0];return{nom:m.elementPharmaceutique||m.denomination||null,forme:m.formePharmaceutique||null,titulaire:m.titulaire||null};}
+      if(data&&data.data&&data.data.length>0){var m2=data.data[0];return{nom:m2.elementPharmaceutique||m2.denomination||null,forme:m2.formePharmaceutique||null,titulaire:m2.titulaire||null};}
+      return null;
+    }));
+  }
+
+  // 3. Open Food Facts (sometimes has OTC pharma)
   promises.push(tryFetch('https://world.openfoodfacts.org/api/v2/product/'+g13+'.json?fields=product_name,brands',function(data){
-    if(data&&data.status===1&&data.product&&data.product.product_name){
-      return{nom:data.product.product_name,forme:null,titulaire:data.product.brands||null};}return null;
-  }));
-
-  // 4. Open Beauty Facts (parapharma, CORS OK)
-  promises.push(tryFetch('https://world.openbeautyfacts.org/api/v2/product/'+g13+'.json?fields=product_name,brands',function(data){
-    if(data&&data.status===1&&data.product&&data.product.product_name){
-      return{nom:data.product.product_name,forme:null,titulaire:data.product.brands||null};}return null;
-  }));
-
-  // 5. Open Pet Food Facts (vet, CORS OK)
-  promises.push(tryFetch('https://world.openpetfoodfacts.org/api/v2/product/'+g13+'.json?fields=product_name,brands',function(data){
     if(data&&data.status===1&&data.product&&data.product.product_name){
       return{nom:data.product.product_name,forme:null,titulaire:data.product.brands||null};}return null;
   }));
 
   var settled=await Promise.allSettled(promises);
   for(var i=0;i<settled.length;i++){
-    if(settled[i].status==='fulfilled'&&settled[i].value){
+    if(settled[i].status==='fulfilled'&&settled[i].value&&settled[i].value.nom){
       return settled[i].value;
     }
   }
@@ -422,6 +425,8 @@ function render(raw,gs1,med){
       if(med.amm)h+='<div class="med-sub" style="font-size:.66rem">AMM n° '+esc(med.amm)+'</div>';
     }else if(med.lookupState==='loading'){
       h+='<div class="med-loading">⏳ Recherche du nom…</div>';
+    }else if(med.lookupState==='notfound'&&med.isVet){
+      h+='<div class="med-sub" style="color:var(--text-dim)">Nom non trouvé dans la base ANMV</div>';
     }else if(med.lookupState==='notfound'){
       h+='<div class="med-sub" style="color:var(--text-dim)">Nom non trouvé dans les bases</div>';
     }else{
