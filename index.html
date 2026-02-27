@@ -409,14 +409,30 @@ const App = (() => {
 
       stream = await navigator.mediaDevices.getUserMedia(constraints);
       video.srcObject = stream;
+
+      // Wait for video to be truly ready (fixes race condition)
+      await new Promise((resolve) => {
+        if (video.readyState >= 2) return resolve();
+        video.onloadeddata = resolve;
+        video.oncanplay = resolve;
+      });
+
       await video.play().catch(() => {});
 
-      video.addEventListener('loadedmetadata', () => {
-        captureCanvas.width = video.videoWidth;
-        captureCanvas.height = video.videoHeight;
-        setStatus('scanning', 'Placez le 2D-Doc dans le cadre');
-        startScanning();
+      // Extra safety: poll until videoWidth > 0
+      await new Promise((resolve) => {
+        if (video.videoWidth > 0) return resolve();
+        const check = setInterval(() => {
+          if (video.videoWidth > 0) { clearInterval(check); resolve(); }
+        }, 50);
+        setTimeout(() => { clearInterval(check); resolve(); }, 3000);
       });
+
+      captureCanvas.width = video.videoWidth || 1280;
+      captureCanvas.height = video.videoHeight || 720;
+      console.log(`[Camera] ${captureCanvas.width}x${captureCanvas.height}`);
+      setStatus('scanning', 'Placez le 2D-Doc dans le cadre');
+      startScanning();
     } catch(err) {
       console.error('[Camera]', err);
       setStatus('error', 'Caméra inaccessible — importez une image');
